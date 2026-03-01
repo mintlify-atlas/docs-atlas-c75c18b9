@@ -1,0 +1,164 @@
+{
+  "projectType": "general",
+  "projectName": "Glass",
+  "projectDescription": "A high-performance, multiplayer code editor with built-in AI capabilities",
+  "theme": "aspen",
+  "primaryColor": "#0080FF",
+  "lightColor": "#60A5FA",
+  "darkColor": "#0052CC",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart",
+              "configuration"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/editor",
+              "features/collaboration",
+              "features/ai-assistant",
+              "features/extensions",
+              "features/terminal"
+            ]
+          },
+          {
+            "group": "AI Capabilities",
+            "pages": [
+              "ai/overview",
+              "ai/agent-panel",
+              "ai/inline-assistant",
+              "ai/code-completion",
+              "ai/providers",
+              "ai/configuration"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/editing",
+              "development/navigation",
+              "development/debugging",
+              "development/testing",
+              "development/git-integration"
+            ]
+          },
+          {
+            "group": "Customization",
+            "pages": [
+              "customization/themes",
+              "customization/keybindings",
+              "customization/settings",
+              "customization/workspace"
+            ]
+          },
+          {
+            "group": "Language Support",
+            "pages": [
+              "languages/overview",
+              "languages/rust",
+              "languages/typescript",
+              "languages/python",
+              "languages/go"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Extensions",
+        "groups": [
+          {
+            "group": "Using Extensions",
+            "pages": [
+              "extensions/overview",
+              "extensions/installing",
+              "extensions/managing"
+            ]
+          },
+          {
+            "group": "Building Extensions",
+            "pages": [
+              "extensions/getting-started",
+              "extensions/language-extensions",
+              "extensions/theme-extensions",
+              "extensions/slash-commands",
+              "extensions/debugging-extensions"
+            ]
+          },
+          {
+            "group": "Extension API",
+            "pages": [
+              "extensions/api/overview",
+              "extensions/api/language-server",
+              "extensions/api/commands",
+              "extensions/api/configuration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Configuration",
+            "pages": [
+              "reference/settings",
+              "reference/keybindings",
+              "reference/commands"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "reference/architecture",
+              "reference/gpui-framework",
+              "reference/crates",
+              "reference/build-system"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/overview",
+              "contributing/setup",
+              "contributing/guidelines",
+              "contributing/testing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "High-performance native code editor built in Rust",
+    "Real-time multiplayer collaboration",
+    "Built-in AI assistance with multiple provider support",
+    "Extensible architecture with language and theme extensions",
+    "GPU-accelerated rendering with GPUI framework",
+    "Integrated terminal and task runner",
+    "Advanced debugging capabilities",
+    "Language server protocol support for 50+ languages",
+    "Git integration with visual diff and blame",
+    "Cross-platform support (macOS, Linux, Windows)"
+  ],
+  "publicApiSurface": [
+    "Extension API for language servers",
+    "Extension API for themes",
+    "Extension API for slash commands",
+    "Extension API for debugger adapters",
+    "Extension API for agent/MCP servers",
+    "GPUI UI framework (public crates)",
+    "Language server protocol integrations",
+    "Agent Client Protocol (ACP)",
+    "Model Context Protocol (MCP) support",
+    "CLI interface (zed command)"
+  ]
+}
