@@ -1,0 +1,351 @@
+---
+title: Development Environment Setup
+description: Set up your development environment to build and run Glass from source on macOS, Linux, or Windows.
+---
+
+# Development Environment Setup
+
+This guide covers setting up your development environment to build Glass from source.
+
+## Prerequisites
+
+### Required Tools
+
+- **Git** - For cloning the repository
+- **Rust toolchain** - Install via [rustup](https://www.rust-lang.org/tools/install)
+- **Platform-specific dependencies** - See platform sections below
+
+## Platform-Specific Setup
+
+<Tabs>
+  <Tab title="macOS">
+    ### macOS Dependencies
+
+    <Steps>
+      <Step title="Install Xcode">
+        Download from the [macOS App Store](https://apps.apple.com/us/app/xcode/id497799835) or [Apple Developer](https://developer.apple.com/download/all/) (requires developer account).
+        
+        Launch Xcode after installation and install the macOS components.
+      </Step>
+      
+      <Step title="Install Xcode command line tools">
+        ```sh
+        xcode-select --install
+        ```
+      </Step>
+      
+      <Step title="Configure Xcode command line tools">
+        ```sh
+        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+        sudo xcodebuild -license accept
+        ```
+      </Step>
+      
+      <Step title="Install CMake">
+        Required by wasmtime dependency:
+        
+        ```sh
+        brew install cmake
+        ```
+      </Step>
+    </Steps>
+
+    ### Speed Optimizations
+
+    If you build frequently, macOS may keep verifying new builds, adding seconds to each iteration:
+
+    1. Run `sudo spctl developer-mode enable-terminal`
+    2. In System Settings, search for "Developer Tools"
+    3. Add your terminal (iTerm, Ghostty, etc.) to "Allow applications to use developer tools"
+    4. Restart your terminal
+
+    <Tip>
+      To avoid continual rebuilds, don't open the Glass codebase in your development build. Run `cargo run ~/path/to/other/project` instead.
+    </Tip>
+  </Tab>
+  
+  <Tab title="Linux">
+    ### Linux Dependencies
+
+    <Steps>
+      <Step title="Install rustup">
+        ```sh
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        ```
+      </Step>
+      
+      <Step title="Install system libraries">
+        ```sh
+        script/linux
+        ```
+        
+        This script installs all required system packages. If you prefer manual installation, check the script for the package list.
+      </Step>
+    </Steps>
+
+    ### Linker Configuration
+
+    Glass uses Mold in CI, but Wild is recommended for local development (5-20% faster).
+
+    **Install Wild:**
+    
+    ```sh
+    script/install-wild
+    ```
+
+    **Configure Wild as default** by adding to `~/.cargo/config.toml`:
+
+    ```toml
+    [target.x86_64-unknown-linux-gnu]
+    linker = "clang"
+    rustflags = ["-C", "link-arg=--ld-path=wild"]
+
+    [target.aarch64-unknown-linux-gnu]
+    linker = "clang"
+    rustflags = ["-C", "link-arg=--ld-path=wild"]
+    ```
+
+    Alternatively, install and configure Mold:
+
+    ```sh
+    script/install-mold
+    ```
+
+    ```toml
+    [target.'cfg(target_os = "linux")']
+    rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+    ```
+
+    ### Display Server Support
+
+    Glass supports both X11 and Wayland. The runtime picks whichever is available. To force X11 mode on Wayland:
+
+    ```sh
+    WAYLAND_DISPLAY='' cargo run
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    ### Windows Dependencies
+
+    <Steps>
+      <Step title="Install rustup">
+        Download and run the installer from [rustup.rs](https://www.rust-lang.org/tools/install).
+      </Step>
+      
+      <Step title="Install Visual Studio build tools">
+        Install [Visual Studio](https://visualstudio.microsoft.com/downloads/) or [Build Tools for Visual Studio](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+        
+        Required components:
+        - MSVC v*** - VS YYYY C++ x64/x86 build tools
+        - MSVC v*** - VS YYYY C++ x64/x86 Spectre-mitigated libs
+        - Windows 10 SDK version 2104 (10.0.20348.0) or later
+        - Desktop development with C++ workload
+      </Step>
+      
+      <Step title="Install Windows SDK">
+        Ensure at least Windows 10 SDK version 2104 is installed. Download from the [Windows SDK Archive](https://developer.microsoft.com/windows/downloads/windows-sdk/).
+      </Step>
+      
+      <Step title="Install CMake">
+        Download from [cmake.org](https://cmake.org/download) or install via Visual Studio Installer. Add CMake's `bin` directory to your PATH:
+        
+        ```
+        C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin
+        ```
+      </Step>
+    </Steps>
+
+    <Warning>
+      If you're using Build Tools only (not full Visual Studio), launch the Developer Command Prompt before building to initialize environment variables.
+    </Warning>
+
+    ### Enable Long Path Support
+
+    Windows has a 260-character path limit that can break builds:
+
+    ```powershell
+    # For Git
+    git config --system core.longpaths true
+    
+    # For Windows
+    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+    ```
+
+    Restart your system after enabling.
+  </Tab>
+</Tabs>
+
+## Clone the Repository
+
+<Note>
+  Glass is a fork of Zed. All branches and PRs must target `Glass-HQ/Glass`, never the upstream `zed-industries/zed` repo.
+</Note>
+
+```sh
+git clone https://github.com/Glass-HQ/Glass.git
+cd Glass
+```
+
+## Building Glass
+
+### Debug Build
+
+Run Glass in debug mode:
+
+```sh
+cargo run
+```
+
+### Release Build
+
+Build and run an optimized release version:
+
+```sh
+cargo run --release
+```
+
+### Running Tests
+
+Run the full test suite:
+
+```sh
+cargo test --workspace
+```
+
+## Installing a Development Build
+
+<Tabs>
+  <Tab title="macOS">
+    Glass doesn't have a dedicated install script for macOS yet. You can run the built binary directly from `target/release/zed` or create a symlink.
+  </Tab>
+  
+  <Tab title="Linux">
+    Install Glass locally:
+
+    ```sh
+    ./script/install-linux
+    ```
+
+    This installs:
+    - Binary at `~/.local/bin/zed`
+    - Desktop files at `~/.local/share`
+  </Tab>
+  
+  <Tab title="Windows">
+    Run the release build directly from `target\release\zed.exe` or add it to your PATH.
+  </Tab>
+</Tabs>
+
+## Understanding the Codebase
+
+Glass is made up of several crates:
+
+- **`gpui`** - GPU-accelerated UI framework providing all building blocks for Glass
+- **`editor`** - Core `Editor` type driving code editor and input fields
+- **`project`** - File management and navigation within the filetree
+- **`workspace`** - Local state serialization, groups projects together
+- **`lsp`** - Communication with external LSP servers
+- **`language`** - Language understanding (symbols, syntax maps)
+- **`collab`** - Collaboration server for project sharing
+- **`rpc`** - Message definitions for collaboration server
+- **`theme`** - Theme system and default themes
+- **`ui`** - Collection of UI components and common patterns
+- **`cli`** - CLI crate invoking the Glass binary
+- **`zed`** - Main entry point where everything comes together
+
+<Tip>
+  Keep the [Zed glossary](https://github.com/zed-industries/zed/blob/main/docs/src/development/glossary.md) handy when starting out. It lists structures and terms throughout the codebase.
+</Tip>
+
+## Build Tools
+
+### Code Quality
+
+Use the custom clippy script instead of `cargo clippy`:
+
+```sh
+./script/clippy
+```
+
+### Visual Regression Tests (macOS only)
+
+Glass includes visual regression tests that capture screenshots and compare against baselines:
+
+<Steps>
+  <Step title="Grant Screen Recording permission">
+    System Settings > Privacy & Security > Screen Recording
+    
+    Enable your terminal app (Terminal.app, iTerm2, Ghostty). Restart your terminal.
+  </Step>
+  
+  <Step title="Generate baseline images">
+    Before making UI changes, generate baselines from a known-good state:
+    
+    ```sh
+    git checkout origin/main
+    UPDATE_BASELINE=1 cargo run -p zed --bin visual_test_runner --features visual-tests
+    git checkout -
+    ```
+  </Step>
+  
+  <Step title="Run visual tests">
+    ```sh
+    cargo run -p zed --bin zed_visual_test_runner --features visual-tests
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cargo errors: unstable features">
+    Try cleaning and rebuilding:
+    
+    ```sh
+    cargo clean
+    cargo build
+    ```
+  </Accordion>
+  
+  <Accordion title="macOS: Error compiling metal shaders">
+    Configure Xcode tools:
+    
+    ```sh
+    sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+    ```
+    
+    On macOS 15+:
+    
+    ```sh
+    xcodebuild -downloadComponent MetalToolchain
+    ```
+  </Accordion>
+  
+  <Accordion title="macOS: dispatch/dispatch.h not found">
+    Install and configure Xcode command line tools:
+    
+    ```sh
+    xcode-select --install
+    sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+    export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=$(xcrun --show-sdk-path)"
+    cargo clean && cargo run
+    ```
+  </Accordion>
+  
+  <Accordion title="Windows: RUSTFLAGS breaks builds">
+    Don't set the `RUSTFLAGS` environment variable - it overrides required settings in `.cargo/config.toml`.
+    
+    Add custom flags to `.cargo/config.toml` instead (see Windows setup section).
+  </Accordion>
+  
+  <Accordion title="Windows: STATUS_ACCESS_VIOLATION">
+    This can happen with the rust-lld.exe linker. Try a different linker configuration in `.cargo/config.toml`.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<Card title="Contribution Guidelines" icon="book" href="./guidelines">
+  Learn our code standards and contribution workflow
+</Card>

@@ -1,0 +1,266 @@
+---
+title: Code Editor
+description: Professional code editing features including multiple cursors, smart selection, and advanced text manipulation
+---
+
+## Overview
+
+Glass features a powerful code editor built on a custom rendering engine designed for performance and extensibility. The editor supports all modern code editing workflows with features like multiple cursors, syntax-aware navigation, and intelligent text manipulation.
+
+## Multiple Cursors
+
+Glass supports sophisticated multi-cursor editing for efficient text manipulation across multiple locations simultaneously.
+
+### Adding Cursors
+
+<Steps>
+  <Step title="Add cursor above">
+    Use `AddSelectionAbove` to add a new cursor on the line above the current position
+  </Step>
+  <Step title="Add cursor below">
+    Use `AddSelectionBelow` to add a new cursor on the line below the current position
+  </Step>
+  <Step title="Select next occurrence">
+    Use `SelectNext` to select the next occurrence of the current selection
+  </Step>
+  <Step title="Select all occurrences">
+    Use `SelectAllMatches` to instantly select all occurrences of the current selection
+  </Step>
+</Steps>
+
+### Multi-Cursor Features
+
+- **Columnar Selection**: Create vertical selections with `BeginColumnar` mode
+- **Skip Soft Wrap**: Configure whether cursors skip soft-wrapped lines
+- **Multi-Cursor Modifier**: Customize modifier keys (Alt or Cmd/Ctrl) for multi-cursor operations
+
+```rust
+// From crates/editor/src/actions.rs
+pub struct AddSelectionAbove {
+    pub skip_soft_wrap: bool,
+}
+
+pub struct SelectNext {
+    pub replace_newest: bool,
+}
+```
+
+## Find and Replace
+
+Powerful search and replace capabilities integrated directly into the editor.
+
+<Tabs>
+  <Tab title="Find">
+    - `FindNextMatch`: Navigate to the next search match
+    - `FindPreviousMatch`: Navigate to the previous search match
+    - `FindAllReferences`: Find all references to a symbol across the project
+  </Tab>
+  <Tab title="Replace">
+    - Replace individual matches
+    - Replace all matches in the current file
+    - Case-sensitive and regex-supported searches
+  </Tab>
+</Tabs>
+
+## Selection and Navigation
+
+### Smart Selection
+
+The editor provides syntax-aware selection commands:
+
+- **`SelectLargerSyntaxNode`**: Expand selection to encompassing syntax node
+- **`SelectSmallerSyntaxNode`**: Contract selection to smaller syntax node
+- **`SelectNextSyntaxNode`**: Move to next sibling syntax node
+- **`SelectPreviousSyntaxNode`**: Move to previous sibling syntax node
+- **`SelectEnclosingSymbol`**: Select the entire enclosing symbol
+
+### Movement Commands
+
+<CardGroup cols={2}>
+  <Card title="Line Navigation" icon="arrows-up-down">
+    - `MoveLineUp` / `MoveLineDown`: Move entire lines
+    - `MoveToBeginningOfLine` / `MoveToEndOfLine`: Jump to line boundaries
+    - `MovePageUp` / `MovePageDown`: Navigate by pages
+  </Card>
+  <Card title="Word Navigation" icon="text">
+    - `MoveToNextWordEnd` / `MoveToPreviousWordStart`: Jump by words
+    - `MoveToNextSubwordEnd` / `MoveToPreviousSubwordStart`: Jump by camelCase/snake_case parts
+  </Card>
+</CardGroup>
+
+## Code Manipulation
+
+### Line Operations
+
+```rust
+// Available line manipulation actions
+- DuplicateLineDown / DuplicateLineUp
+- DeleteLine
+- JoinLines
+- ReverseLines
+- SortLinesCaseSensitive / SortLinesCaseInsensitive
+- SortLinesByLength
+- ShuffleLines
+- UniqueLinesCaseSensitive / UniqueLinesCaseInsensitive
+```
+
+### Text Transformation
+
+Convert selected text between various cases:
+
+<CardGroup cols={3}>
+  <Card title="Case Styles">
+    - `ConvertToUpperCase`
+    - `ConvertToLowerCase`
+    - `ConvertToTitleCase`
+    - `ConvertToSentenceCase`
+  </Card>
+  <Card title="Programming Cases">
+    - `ConvertToUpperCamelCase`
+    - `ConvertToLowerCamelCase`
+    - `ConvertToSnakeCase`
+    - `ConvertToKebabCase`
+  </Card>
+  <Card title="Other">
+    - `ConvertToOppositeCase`
+    - `ConvertToRot13`
+    - `ConvertToRot47`
+  </Card>
+</CardGroup>
+
+### Code Actions
+
+- **`ToggleCodeActions`**: Display available code actions at cursor
+- **`ConfirmCodeAction`**: Apply selected code action
+- **Format**: `Format` (entire document) or `FormatSelections` (selected text only)
+- **Organize Imports**: `OrganizeImports`
+
+## Folding and Visibility
+
+### Code Folding
+
+Manage code visibility with powerful folding commands:
+
+- `Fold` / `Unfold`: Toggle folding at cursor
+- `FoldAll` / `UnfoldAll`: Fold/unfold all foldable regions
+- `FoldRecursive` / `UnfoldRecursive`: Recursive folding operations
+- `FoldFunctionBodies`: Fold all function bodies for overview
+- `FoldAtLevel1` through `FoldAtLevel9`: Fold at specific indentation levels
+
+### Excerpts
+
+Work with code excerpts in multibuffer views:
+
+- **`ExpandExcerpts`**: Expand all excerpts by specified lines
+- **`ExpandExcerptsUp` / `ExpandExcerptsDown`**: Expand in specific directions
+- **`OpenExcerpts` / `OpenExcerptsSplit`**: Open excerpts in new or split view
+
+## Editor Display
+
+### Visual Enhancements
+
+<Tabs>
+  <Tab title="Guides and Hints">
+    - **`ToggleIndentGuides`**: Show/hide indentation guides
+    - **`ToggleInlayHints`**: Display inline type hints and parameter names
+    - **`ToggleInlineValues`**: Show variable values during debugging
+  </Tab>
+  <Tab title="Line Numbers">
+    - **`ToggleLineNumbers`**: Show/hide line numbers
+    - **`ToggleRelativeLineNumbers`**: Switch to relative line numbering
+  </Tab>
+  <Tab title="Diagnostics">
+    - **`ToggleDiagnostics`**: Show/hide diagnostic panel
+    - **`ToggleInlineDiagnostics`**: Toggle inline diagnostic display
+    - **`GoToDiagnostic` / `GoToPreviousDiagnostic`**: Navigate diagnostics
+  </Tab>
+</Tabs>
+
+### Minimap
+
+- **`ToggleMinimap`**: Show/hide the code minimap for navigation
+- Configurable minimap settings in `EditorSettings`
+
+<Note>
+The minimap uses a specialized `MINIMAP_FONT_SIZE` of 2 pixels for rendering efficiency.
+</Note>
+
+## Git Integration
+
+### Diff Viewing
+
+- **`ExpandAllDiffHunks` / `CollapseAllDiffHunks`**: Manage diff visibility
+- **`ToggleSelectedDiffHunks`**: Toggle specific diff hunks
+- **`GoToHunk` / `GoToPreviousHunk`**: Navigate between changes
+- **`ApplyDiffHunk` / `ApplyAllDiffHunks`**: Apply changes from diffs
+
+### Git Blame
+
+- **`ToggleGitBlameInline`**: Display git blame information inline
+- **`BlameHover`**: Show blame info on hover
+- **`OpenGitBlameCommit`**: Open the full commit for current blame
+
+## Advanced Features
+
+### Snippets
+
+```rust
+// Insert snippet from configuration
+pub struct InsertSnippet {
+    pub language: Option<String>,
+    pub name: Option<String>,
+    pub snippet: Option<String>,
+}
+```
+
+- Insert predefined code snippets
+- Navigate snippet tabstops with `NextSnippetTabstop` / `PreviousSnippetTabstop`
+- Language-specific snippet support
+
+### Breadcrumbs
+
+Navigate code structure with breadcrumb navigation showing current symbol context.
+
+### Hyperlinks
+
+- **`OpenUrl`**: Open URLs at cursor position
+- **`OpenSelectedFilename`**: Open file paths in selection
+- **`CopyPermalinkToLine`**: Copy shareable link to current line
+- **`OpenPermalinkToLine`**: Open permalink in browser
+
+### Language Server Integration
+
+<CardGroup cols={2}>
+  <Card title="Navigation">
+    - `GoToDefinition` / `GoToDefinitionSplit`
+    - `GoToDeclaration` / `GoToDeclarationSplit`
+    - `GoToImplementation` / `GoToImplementationSplit`
+    - `GoToTypeDefinition` / `GoToTypeDefinitionSplit`
+  </Card>
+  <Card title="Information">
+    - `Hover`: Show symbol information
+    - `ShowSignatureHelp`: Display function signatures
+    - `ShowCompletions`: Trigger code completion
+    - `Rename`: Rename symbol across project
+  </Card>
+</CardGroup>
+
+<Warning>
+Language server features require a compatible language server to be installed and configured for your language.
+</Warning>
+
+## Performance
+
+The editor is optimized for performance:
+
+- Custom rendering engine with efficient text layout
+- Display map system for handling folds, wraps, and inlays efficiently
+- Debounced operations (code actions: 250ms, selection highlight: 100ms)
+- Configurable timeouts for LSP operations
+
+```rust
+// From crates/editor/src/editor.rs
+const CODE_ACTIONS_DEBOUNCE_TIMEOUT: Duration = Duration::from_millis(250);
+const SELECTION_HIGHLIGHT_DEBOUNCE_TIMEOUT: Duration = Duration::from_millis(100);
+const CODE_ACTION_TIMEOUT: Duration = Duration::from_secs(5);
+```

@@ -1,0 +1,485 @@
+---
+title: Testing Practices & Requirements
+description: Learn how to write and run tests for Glass code editor, including unit tests, integration tests, and visual regression tests.
+---
+
+# Testing Practices & Requirements
+
+Glass requires tests for all non-trivial changes. This guide covers how to write and run tests effectively.
+
+## Test Requirements
+
+<Warning>
+  Non-trivial changes without tests will not be merged. Include tests with your pull requests.
+</Warning>
+
+When to include tests:
+
+- **Bug fixes** - Add a test that reproduces the bug and verifies the fix
+- **New features** - Cover the happy path and common edge cases
+- **Refactoring** - Ensure existing tests still pass, add new ones if coverage gaps exist
+- **UI changes** - Consider visual regression tests on macOS
+
+## Running Tests
+
+### Full Test Suite
+
+Run all tests across the workspace:
+
+```sh
+cargo test --workspace
+```
+
+### Specific Crate
+
+Test a single crate:
+
+```sh
+cargo test -p gpui
+cargo test -p editor
+cargo test -p project
+```
+
+### Specific Test
+
+Run a single test by name:
+
+```sh
+cargo test test_name
+cargo test test_name -- --nocapture  # Show println output
+```
+
+### Using Nextest
+
+Nextest provides better test execution and output:
+
+```sh
+# Install
+cargo install cargo-nextest --locked
+
+# Run tests
+cargo nextest run --workspace
+cargo nextest run --workspace --no-fail-fast  # Continue after failures
+```
+
+<Tip>
+  Nextest is especially helpful on macOS if you encounter "Too many open files" errors.
+</Tip>
+
+## Writing Tests
+
+### Unit Tests
+
+Unit tests live in a `tests` module at the bottom of the file:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic_functionality() {
+        let result = some_function();
+        assert_eq!(result, expected_value);
+    }
+
+    #[test]
+    fn test_error_handling() {
+        let result = fallible_function();
+        assert!(result.is_err());
+    }
+}
+```
+
+### GPUI Tests
+
+For tests involving GPUI entities and UI:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::TestAppContext;
+
+    #[gpui::test]
+    fn test_entity_behavior(cx: &mut TestAppContext) {
+        let entity = cx.new(|_| MyEntity::new());
+        
+        entity.update(cx, |entity, cx| {
+            entity.do_something(cx);
+            assert_eq!(entity.state(), ExpectedState);
+        });
+    }
+}
+```
+
+<Note>
+  Use `#[gpui::test]` instead of `#[test]` for tests that need GPUI's app context.
+</Note>
+
+### Async Tests
+
+For async functionality:
+
+```rust
+#[gpui::test]
+async fn test_async_operation(cx: &mut TestAppContext) {
+    let result = cx.executor().spawn(async {
+        perform_async_work().await
+    }).await;
+    
+    assert!(result.is_ok());
+}
+```
+
+### Testing with Timers
+
+<Warning>
+  In GPUI tests, use GPUI executor timers instead of `smol::Timer::after(...)`.
+</Warning>
+
+```rust
+#[gpui::test]
+async fn test_with_delay(cx: &mut TestAppContext) {
+    // Good - tracked by GPUI's scheduler
+    cx.background_executor().timer(Duration::from_millis(100)).await;
+    
+    // Bad - may not be tracked, causes "nothing left to run" errors
+    // smol::Timer::after(Duration::from_millis(100)).await;
+}
+```
+
+Use `run_until_parked()` to drive the executor:
+
+```rust
+#[gpui::test]
+async fn test_background_work(cx: &mut TestAppContext) {
+    let (tx, rx) = oneshot::channel();
+    
+    cx.background_executor().spawn(async move {
+        // Background work
+        tx.send(result).ok();
+    }).detach();
+    
+    cx.background_executor().run_until_parked();
+    
+    let result = rx.await.unwrap();
+    assert_eq!(result, expected);
+}
+```
+
+## Test Organization
+
+### Test Files
+
+Tests can be organized in several ways:
+
+1. **Inline tests module** - `#[cfg(test)] mod tests` at end of file
+2. **Separate test file** - `src/foo_test.rs` or `src/tests.rs`
+3. **Integration tests** - `crates/my_crate/tests/integration_test.rs`
+
+Most Glass tests use inline test modules or separate test files within `src/`.
+
+### Test Fixtures
+
+Test fixtures and sample data belong in:
+
+```
+crates/my_crate/test_fixtures/
+```
+
+Example:
+
+```
+crates/zed/test_fixtures/visual_tests/  # Visual regression baselines
+crates/my_crate/test_fixtures/sample_data.json
+```
+
+## Visual Regression Tests
+
+<Note>
+  Visual regression tests are currently macOS-only and require Screen Recording permission.
+</Note>
+
+Visual tests capture screenshots of real Glass windows and compare them against baseline images.
+
+### Prerequisites
+
+<Steps>
+  <Step title="Grant Screen Recording permission">
+    1. Run the visual test runner once - macOS will prompt for permission
+    2. Or manually: System Settings > Privacy & Security > Screen Recording
+    3. Enable your terminal app (Terminal.app, iTerm2, Ghostty)
+    4. Restart your terminal after granting permission
+  </Step>
+</Steps>
+
+### Running Visual Tests
+
+```sh
+cargo run -p zed --bin zed_visual_test_runner --features visual-tests
+```
+
+### Baseline Images
+
+Baseline images are stored in `crates/zed/test_fixtures/visual_tests/` but are **gitignored** to avoid bloating the repository.
+
+#### Initial Setup
+
+Before making UI changes, generate baseline images from a known-good state:
+
+```sh
+git checkout origin/main
+UPDATE_BASELINE=1 cargo run -p zed --bin visual_test_runner --features visual-tests
+git checkout -
+```
+
+#### Updating Baselines
+
+When UI changes are intentional, update the baseline images:
+
+```sh
+UPDATE_BASELINE=1 cargo run -p zed --bin zed_visual_test_runner --features visual-tests
+```
+
+<Tip>
+  Baselines are local-only to keep the git repository lightweight. In the future, they may be stored externally.
+</Tip>
+
+### Writing Visual Tests
+
+Visual tests use the GPUI visual test framework:
+
+```rust
+#[gpui::visual_test]
+fn test_my_ui_component(cx: &mut VisualTestContext) {
+    cx.window(|window, cx| {
+        div()
+            .size_full()
+            .child(MyComponent::new(cx))
+    });
+}
+```
+
+The test framework:
+1. Renders the component
+2. Captures a screenshot
+3. Compares against the baseline
+4. Fails if pixels differ beyond threshold
+
+## Test Best Practices
+
+### Test Naming
+
+Use descriptive test names that explain what's being tested:
+
+```rust
+// Good
+#[test]
+fn parse_correctly_handles_empty_input() { ... }
+
+#[test]
+fn update_triggers_notify_callback() { ... }
+
+// Bad
+#[test]
+fn test1() { ... }
+
+#[test]
+fn it_works() { ... }
+```
+
+### Test Independence
+
+Each test should be independent:
+
+- Don't rely on execution order
+- Don't share mutable state between tests
+- Clean up resources (files, network connections) after tests
+
+### Test Coverage
+
+Aim to test:
+
+- **Happy path** - Normal expected usage
+- **Edge cases** - Empty inputs, boundary values, large inputs
+- **Error cases** - Invalid inputs, network failures, permission errors
+- **Concurrency** - Race conditions, deadlocks (if applicable)
+
+### Assertions
+
+Use appropriate assertion macros:
+
+```rust
+assert!(condition);                    // Boolean condition
+assert_eq!(actual, expected);          // Equality
+assert_ne!(actual, unexpected);        // Inequality
+assert!(result.is_ok());               // Result is Ok
+assert!(result.is_err());              // Result is Err
+assert!(option.is_some());             // Option is Some
+assert!(option.is_none());             // Option is None
+```
+
+Provide helpful failure messages:
+
+```rust
+assert_eq!(
+    actual,
+    expected,
+    "Expected parser to handle empty input, but got: {:?}",
+    actual
+);
+```
+
+## Debugging Tests
+
+### Print Debugging
+
+Use `println!` with `--nocapture`:
+
+```sh
+cargo test test_name -- --nocapture
+```
+
+### Debug Logging
+
+Enable GPUI logging in tests:
+
+```rust
+#[gpui::test]
+fn test_with_logging(cx: &mut TestAppContext) {
+    env_logger::init();
+    // Test code
+}
+```
+
+Run with:
+
+```sh
+RUST_LOG=debug cargo test test_name -- --nocapture
+```
+
+### Test Failures
+
+When a test fails:
+
+1. Read the assertion message carefully
+2. Check the actual vs expected values
+3. Use `println!` to inspect intermediate state
+4. Run the specific test in isolation
+5. Use a debugger if needed (see development platform docs)
+
+## Continuous Integration
+
+All tests run in CI on every pull request. Your PR must pass all tests before merging.
+
+CI runs:
+
+- Unit tests on all platforms (macOS, Linux, Windows)
+- Integration tests
+- Linting and formatting checks
+- License compliance checks
+
+Check CI status:
+
+- View the GitHub Actions tab on your PR
+- Click on failed checks to see logs
+- Fix issues and push new commits (CI re-runs automatically)
+
+## Performance Testing
+
+### Benchmarking
+
+For performance-critical code, consider adding benchmarks:
+
+```rust
+#[bench]
+fn bench_parser(b: &mut Bencher) {
+    let input = prepare_input();
+    b.iter(|| {
+        parse(black_box(input))
+    });
+}
+```
+
+Run benchmarks:
+
+```sh
+cargo bench
+```
+
+### Profiling
+
+See the development platform guides for profiling tools:
+
+- **macOS**: Instruments, heaptrack
+- **Linux**: perf, heaptrack, flamegraph
+- **Windows**: Visual Studio profiler
+
+## Common Testing Patterns
+
+### Testing Entity Updates
+
+```rust
+#[gpui::test]
+fn test_entity_update(cx: &mut TestAppContext) {
+    let entity = cx.new(|_| MyEntity::default());
+    
+    let result = entity.update(cx, |entity, cx| {
+        entity.perform_action(cx);
+        entity.get_state()
+    });
+    
+    assert_eq!(result, expected_state);
+}
+```
+
+### Testing Events
+
+```rust
+#[gpui::test]
+fn test_event_emission(cx: &mut TestAppContext) {
+    let entity = cx.new(|_| MyEntity::default());
+    let mut events = Vec::new();
+    
+    let _subscription = cx.subscribe(&entity, |_, _, event, _| {
+        events.push(event.clone());
+    });
+    
+    entity.update(cx, |entity, cx| {
+        entity.trigger_event(cx);
+    });
+    
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0], ExpectedEvent);
+}
+```
+
+### Testing Async Operations
+
+```rust
+#[gpui::test]
+async fn test_async_work(cx: &mut TestAppContext) {
+    let entity = cx.new(|_| MyEntity::default());
+    
+    let task = entity.update(cx, |entity, cx| {
+        entity.start_async_operation(cx)
+    });
+    
+    let result = task.await;
+    assert!(result.is_ok());
+}
+```
+
+## Resources
+
+- [Rust testing documentation](https://doc.rust-lang.org/book/ch11-00-testing.html)
+- [GPUI documentation](https://github.com/zed-industries/zed/tree/main/crates/gpui)
+- [Zed development glossary](https://github.com/zed-industries/zed/blob/main/docs/src/development/glossary.md)
+- [cargo-nextest](https://nexte.st/)
+
+## Next Steps
+
+<Card title="Make Your First Contribution" icon="code-pull-request" href="./overview">
+  Ready to contribute? Start with the contribution overview
+</Card>

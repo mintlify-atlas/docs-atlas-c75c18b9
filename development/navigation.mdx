@@ -1,0 +1,315 @@
+---
+title: Code Navigation
+description: Navigate your codebase efficiently with go to definition, find references, and symbol search
+---
+
+Glass provides powerful navigation features powered by Language Server Protocol (LSP) integration, enabling you to explore and understand codebases of any size quickly and accurately.
+
+## Go to Definition
+
+Jump directly to where symbols are defined, whether in the same file or across your entire project.
+
+### Basic Usage
+
+```rust
+// From crates/editor/src/actions.rs
+GoToDefinition,
+GoToDefinitionSplit,
+```
+
+<Steps>
+  <Step title="Navigate to Definition">
+    Use `GoToDefinition` to jump to the definition of the symbol under your cursor. Glass uses LSP to provide accurate results across languages.
+  </Step>
+
+  <Step title="Open in Split">
+    Use `GoToDefinitionSplit` to open the definition in a new split pane, keeping your current context visible.
+  </Step>
+
+  <Step title="Fallback Behavior">
+    Configure fallback behavior when definitions aren't available through LSP:
+
+    ```rust
+    // From crates/editor/src/editor_settings.rs
+    pub enum GoToDefinitionFallback {
+        // Implementation specific to your needs
+    }
+    ```
+  </Step>
+</Steps>
+
+<Note>
+Glass's go to definition feature works seamlessly across multiple language servers, automatically choosing the most appropriate server for each file type.
+</Note>
+
+## Find References
+
+Locate all usages of a symbol across your project to understand its impact and relationships.
+
+### How It Works
+
+1. **LSP Integration**: Glass queries language servers for reference information
+2. **Multi-file Search**: Results span your entire workspace
+3. **Contextual Display**: See each reference with surrounding code for context
+
+<Tip>
+Use find references before refactoring to understand the full scope of changes needed.
+</Tip>
+
+## Symbol Navigation
+
+Quickly jump between symbols in your current file or across your project.
+
+### Document Symbols
+
+```rust
+// Glass tracks document symbols for fast navigation
+// From crates/editor/src/document_symbols.rs
+```
+
+Navigate your file's structure:
+- **Functions and methods**
+- **Classes and structs**  
+- **Constants and variables**
+- **Imports and modules**
+
+### Outline View
+
+Glass provides an outline view showing the hierarchical structure of your code:
+
+```rust
+// Language module provides outline items
+pub struct OutlineItem {
+    // Symbol information for navigation
+}
+```
+
+## Hover Information
+
+Get instant information about symbols without leaving your editor.
+
+### Hover Popover
+
+```rust
+// From crates/editor/src/hover_popover.rs
+pub fn hover(editor: &mut Editor, _: &Hover, window: &mut Window, cx: &mut Context<Editor>) {
+    let head = editor.selections.newest_anchor().head();
+    show_hover(editor, head, true, window, cx);
+}
+```
+
+<Tabs>
+  <Tab title="Type Information">
+    Hover over variables and expressions to see their types, inferred by the language server.
+  </Tab>
+
+  <Tab title="Documentation">
+    View documentation comments and signatures for functions, methods, and types.
+  </Tab>
+
+  <Tab title="Diagnostics">
+    Hover over errors and warnings to see detailed diagnostic information.
+  </Tab>
+</Tabs>
+
+### Inlay Hints
+
+Glass supports LSP inlay hints for additional inline information:
+
+```rust
+// From crates/editor/src/hover_popover.rs
+pub struct InlayHover {
+    pub(crate) range: InlayHighlight,
+    pub tooltip: HoverBlock,
+}
+```
+
+Inlay hints provide:
+- **Parameter names** in function calls
+- **Type annotations** for inferred types
+- **Return types** for closures
+- **Chaining hints** for method chains
+
+<Note>
+You can hover over inlay hints to get additional information and context about the displayed information.
+</Note>
+
+## Language Server Protocol
+
+Glass's navigation features are powered by LSP, providing consistent functionality across programming languages.
+
+### LSP Capabilities
+
+```rust
+// From crates/lsp/src/lsp.rs
+pub struct LanguageServer {
+    server_id: LanguageServerId,
+    capabilities: RwLock<ServerCapabilities>,
+    // ...
+}
+```
+
+Supported LSP features:
+- **textDocument/definition** - Go to definition
+- **textDocument/references** - Find all references
+- **textDocument/documentSymbol** - Document outline
+- **textDocument/hover** - Hover information
+- **textDocument/signatureHelp** - Function signatures
+- **textDocument/implementation** - Find implementations
+- **textDocument/typeDefinition** - Go to type definition
+
+### Server Management
+
+```rust
+pub struct LanguageServerId(pub usize);
+
+pub struct LanguageServerName(pub SharedString);
+```
+
+Glass manages multiple language servers efficiently:
+- Automatic server startup and shutdown
+- Per-language configuration
+- Workspace folder awareness
+- Request timeout handling
+
+<Warning>
+Default LSP request timeout is 120 seconds. Adjust this in settings if working with very large codebases or slower language servers.
+</Warning>
+
+## Code Actions
+
+Access context-aware refactorings and quick fixes directly from the editor.
+
+### Toggle Code Actions
+
+```rust
+pub struct ToggleCodeActions {
+    pub deployed_from: Option<CodeActionSource>,
+    pub quick_launch: bool,
+}
+
+pub enum CodeActionSource {
+    Indicator(DisplayRow),
+    RunMenu(DisplayRow),
+    QuickActionBar,
+}
+```
+
+Code actions can be triggered from:
+- **Diagnostic indicators** - Quick fixes for errors
+- **Run menu** - Execute or debug code
+- **Quick action bar** - Common refactorings
+
+### Available Code Actions
+
+Depending on your language server:
+- **Extract function/variable**
+- **Rename symbol**
+- **Organize imports**
+- **Generate code** (constructors, getters, etc.)
+- **Apply quick fixes** for diagnostics
+
+## Breadcrumbs
+
+Glass displays breadcrumbs showing your current location in the code hierarchy:
+
+```rust
+// From crates/editor/src/element.rs
+pub fn render_breadcrumb_text(...)
+```
+
+Breadcrumbs show:
+- Current file path
+- Symbol hierarchy (class → method → nested function)
+- Click to navigate to any level
+
+## Diagnostic Navigation
+
+Quickly jump between errors and warnings in your code.
+
+### Go to Diagnostic
+
+Navigate through diagnostics with filtering:
+
+```rust
+// From crates/project/src/project_settings.rs
+pub enum GoToDiagnosticSeverityFilter {
+    // Filter diagnostics by severity
+}
+```
+
+Filter options:
+- **All diagnostics** - Errors, warnings, and info
+- **Errors only** - Focus on breaking issues
+- **Warnings and errors** - Skip informational messages
+
+<Tip>
+Use diagnostic navigation to systematically fix all issues in a file, working from top to bottom.
+</Tip>
+
+## Hover Links
+
+Glass supports clickable links in hover information:
+
+```rust
+// From crates/editor/src/hover_links.rs
+pub struct HoverLink {
+    // Link information for navigation
+}
+```
+
+Click links to:
+- Open referenced files
+- Navigate to related symbols
+- View external documentation
+- Follow URLs in documentation
+
+## Search Settings
+
+```rust
+pub struct SearchSettings {
+    // Configuration for search behavior
+}
+```
+
+Customize navigation behavior:
+- **Case sensitivity** in symbol search
+- **Whole word matching**
+- **Regular expression support**
+- **Search scope** (current file, workspace, etc.)
+
+## Performance Considerations
+
+### LSP Request Timeouts
+
+```rust
+// From crates/lsp/src/lsp.rs
+pub const DEFAULT_LSP_REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
+```
+
+Glass implements smart timeout handling:
+- Default 120-second timeout for LSP requests
+- Graceful fallback when servers are slow
+- Request cancellation on navigation away
+
+### Caching
+
+Glass caches navigation results for performance:
+- Symbol indices for quick lookup
+- Reference results for repeated queries
+- Hover information for responsive UI
+
+## Best Practices
+
+1. **Use breadcrumbs** to understand your current context in large files
+2. **Enable inlay hints** for better code comprehension, especially in languages with type inference
+3. **Configure go to definition fallback** for robustness when LSP is unavailable
+4. **Use find references** before major refactorings to assess impact
+5. **Leverage code actions** for safe, language-aware refactorings
+6. **Navigate diagnostics** systematically to ensure code quality
+
+## Related Features
+
+- [Code Editing](/development/editing) - Text manipulation and multi-cursor editing
+- [Debugging](/development/debugging) - Debug your code with breakpoints and inspection
+- [Testing](/development/testing) - Run tests and tasks from the editor

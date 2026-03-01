@@ -1,0 +1,376 @@
+---
+title: Workspace Configuration
+description: Configure workspace behavior, layout, and project settings in Glass
+---
+
+Workspaces in Glass represent your project environment, including open files, layout, panels, and project-specific settings. You can customize workspace behavior to match your workflow.
+
+## Workspace Basics
+
+A workspace consists of:
+
+- **Panes** - Editors and panels arranged in a flexible layout
+- **Docks** - Collapsible panels on the left, right, and bottom
+- **Project** - One or more folders with their worktrees
+- **State** - Open files, cursor positions, and UI layout
+
+## Workspace Settings
+
+Configure workspace behavior in your `settings.json`:
+
+```json settings.json
+{
+  "restore_on_startup": "last_session",
+  "autosave": "on_focus_change",
+  "confirm_quit": false,
+  "active_pane_modifiers": {
+    "border_size": 1.0,
+    "inactive_opacity": 0.95
+  },
+  "centered_layout": {
+    "left_padding": 0.2,
+    "right_padding": 0.2
+  }
+}
+```
+
+## Session Restoration
+
+Control what Glass restores when you reopen it:
+
+<ParamField path="restore_on_startup" type="string" default="last_session">
+  - `"last_session"` - Restore all workspaces from your previous session
+  - `"last_workspace"` - Restore only the last workspace you used
+  - `"none"` - Start with an empty workspace
+</ParamField>
+
+<ParamField path="restore_on_file_reopen" type="boolean" default="true">
+  Restore file state (selections, folds, scroll position) when reopening files in the same pane
+</ParamField>
+
+```json settings.json
+{
+  "restore_on_startup": "last_session",
+  "restore_on_file_reopen": true
+}
+```
+
+Workspace state is persisted in a local database managed by `crates/workspace/` using the `WorkspaceDb` for serialization and restoration.
+
+## Pane Management
+
+### Pane Splitting
+
+Control how panes split when opening files:
+
+```json settings.json
+{
+  "pane_split_direction_horizontal": "down",
+  "pane_split_direction_vertical": "right"
+}
+```
+
+<ParamField path="pane_split_direction_horizontal" type="string" default="down">
+  Direction for horizontal splits: `"up"` or `"down"`
+</ParamField>
+
+<ParamField path="pane_split_direction_vertical" type="string" default="right">
+  Direction for vertical splits: `"left"` or `"right"`
+</ParamField>
+
+### Active Pane Styling
+
+Highlight the active pane:
+
+```json settings.json
+{
+  "active_pane_modifiers": {
+    "border_size": 2.0,
+    "inactive_opacity": 0.8
+  }
+}
+```
+
+<ParamField path="active_pane_modifiers.border_size" type="number" default="0.0">
+  Border width (in pixels) around the active pane. Set to 0 to disable.
+</ParamField>
+
+<ParamField path="active_pane_modifiers.inactive_opacity" type="number" default="1.0">
+  Opacity of inactive panes (0.0 to 1.0). Lower values make inactive panes more faded.
+</ParamField>
+
+### Tab Management
+
+```json settings.json
+{
+  "max_tabs": null,
+  "tab_bar": {
+    "show": true,
+    "show_nav_history_buttons": true,
+    "show_tab_bar_buttons": true,
+    "show_pinned_tabs_in_separate_row": false
+  }
+}
+```
+
+<ParamField path="max_tabs" type="number | null" default="null">
+  Maximum number of tabs per pane. When reached, least recently used tabs are closed. `null` means unlimited.
+</ParamField>
+
+## Dock Configuration
+
+Customize dock behavior and layout:
+
+### Bottom Dock Layout
+
+```json settings.json
+{
+  "bottom_dock_layout": "contained"
+}
+```
+
+<ParamField path="bottom_dock_layout" type="string" default="contained">
+  Bottom dock width behavior:
+  - `"contained"` - Dock width matches the editor area
+  - `"full"` - Dock spans the full window width
+  - `"left_aligned"` - Dock aligns to the left
+  - `"right_aligned"` - Dock aligns to the right
+</ParamField>
+
+### Dock Toggling
+
+```json settings.json
+{
+  "close_panel_on_toggle": false
+}
+```
+
+<ParamField path="close_panel_on_toggle" type="boolean" default="false">
+  If `true`, toggling a focused panel closes it. If `false`, focus returns to the editor.
+</ParamField>
+
+## Layout Options
+
+### Centered Layout
+
+Use centered layout for focused editing:
+
+```json settings.json
+{
+  "centered_layout": {
+    "left_padding": 0.2,
+    "right_padding": 0.2
+  }
+}
+```
+
+Padding values are relative to workspace width (0.0 to 0.5).
+
+### Zoom Mode
+
+```json settings.json
+{
+  "zoomed_padding": true
+}
+```
+
+<ParamField path="zoomed_padding" type="boolean" default="false">
+  Add padding when zooming into a pane
+</ParamField>
+
+## File Handling
+
+### Autosave
+
+Configure automatic file saving:
+
+```json settings.json
+{
+  "autosave": "on_focus_change",
+  "autosave_delay": 1000
+}
+```
+
+<ParamField path="autosave" type="string" default="off">
+  When to automatically save:
+  - `"off"` - Never autosave
+  - `"on_focus_change"` - Save when switching files or windows
+  - `"on_window_change"` - Save when switching Glass windows
+  - `"after_delay"` - Save after idle time (see `autosave_delay`)
+</ParamField>
+
+<ParamField path="autosave_delay" type="number" default="1000">
+  Milliseconds to wait before autosaving (when `autosave` is `"after_delay"`)
+</ParamField>
+
+### File Deletion
+
+```json settings.json
+{
+  "close_on_file_delete": false
+}
+```
+
+<ParamField path="close_on_file_delete" type="boolean" default="false">
+  Automatically close files when they are deleted from disk
+</ParamField>
+
+### Drag and Drop
+
+```json settings.json
+{
+  "drop_target_size": 0.2
+}
+```
+
+<ParamField path="drop_target_size" type="number" default="0.2">
+  Relative size (0.0 to 0.5) of drop zones at pane edges for split behavior. Larger values make it easier to split panes by dragging.
+</ParamField>
+
+## Project Configuration
+
+Project-specific settings in `.glass/settings.json`:
+
+```json .glass/settings.json
+{
+  "project_name": "My Project",
+  "languages": {
+    "TypeScript": {
+      "tab_size": 2,
+      "format_on_save": "on"
+    }
+  },
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "check": {
+          "command": "clippy"
+        }
+      }
+    }
+  }
+}
+```
+
+<Note>
+  Project settings override user settings. Share project settings with your team by committing `.glass/settings.json` to version control.
+</Note>
+
+## Worktrees
+
+Manage multiple folders in one workspace:
+
+```json settings.json
+{
+  "worktree": {
+    "exclude_files": [
+      "node_modules",
+      ".git",
+      "target"
+    ]
+  }
+}
+```
+
+### Adding Folders
+
+- **Command:** `workspace: add folder to project`
+- **Menu:** File → Add Folder to Project
+
+Each folder becomes a worktree with its own file watching, indexing, and settings scope.
+
+## Window Behavior
+
+```json settings.json
+{
+  "confirm_quit": false,
+  "when_closing_with_no_tabs": "close_window",
+  "on_last_window_closed": "quit",
+  "window_decorations": "server"
+}
+```
+
+<ParamField path="confirm_quit" type="boolean" default="false">
+  Show confirmation dialog before quitting Glass
+</ParamField>
+
+<ParamField path="when_closing_with_no_tabs" type="string" default="close_window">
+  Action when closing the last tab:
+  - `"close_window"` - Close the window
+  - `"keep_window_open"` - Keep the empty window open
+</ParamField>
+
+<ParamField path="on_last_window_closed" type="string" default="quit">
+  Action when closing the last window:
+  - `"quit"` - Quit Glass
+  - `"keep_running"` - Keep Glass running in the background
+</ParamField>
+
+## System Integration
+
+### Path Prompts
+
+```json settings.json
+{
+  "use_system_path_prompts": true,
+  "use_system_prompts": false
+}
+```
+
+<ParamField path="use_system_path_prompts" type="boolean" default="true">
+  Use native OS file dialogs for open/save operations
+</ParamField>
+
+<ParamField path="use_system_prompts" type="boolean" default="false">
+  Use native OS dialogs for confirmations and alerts
+</ParamField>
+
+### Window Tabs (macOS)
+
+```json settings.json
+{
+  "use_system_window_tabs": false
+}
+```
+
+<ParamField path="use_system_window_tabs" type="boolean" default="false">
+  Use macOS native window tabs instead of Glass workspaces
+</ParamField>
+
+## Command Aliases
+
+Create shortcuts for common terminal commands:
+
+```json settings.json
+{
+  "command_aliases": {
+    "gst": "git status",
+    "gcm": "git commit -m",
+    "gp": "git push"
+  }
+}
+```
+
+Aliases are available in Glass terminals and command runners.
+
+## Workspace Implementation
+
+The workspace system is implemented in `crates/workspace/` with:
+
+- **Workspace** - Main workspace entity managing panes, docks, and project
+- **Pane** - Container for items (editors, terminals, etc.)
+- **PaneGroup** - Hierarchical pane layout with splitting
+- **Dock** - Collapsible panel container
+- **WorkspaceDb** - Persistence layer for workspace state
+
+Workspace state includes:
+- Pane layout and split directions
+- Open items and their state
+- Dock visibility and sizes
+- Active item and focus state
+
+All workspace state is automatically persisted and can be restored on restart through the `restore_on_startup` setting.
+
+<Tip>
+  Use multiple workspaces to organize different projects or contexts. Each workspace maintains its own layout, open files, and state.
+</Tip>

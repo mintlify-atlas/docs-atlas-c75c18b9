@@ -1,0 +1,648 @@
+---
+title: AI Configuration Settings
+description: Comprehensive guide to configuring AI behavior, tool permissions, model parameters, and advanced features in Glass
+---
+
+Customize Glass's AI capabilities to match your workflow. This guide covers all available configuration options.
+
+## Settings Location
+
+AI settings are configured in your Glass settings file:
+
+<CodeGroup>
+```bash macOS
+~/.config/zed/settings.json
+```
+
+```bash Linux
+~/.config/zed/settings.json
+```
+
+```bash Windows
+%APPDATA%\Zed\settings.json
+```
+</CodeGroup>
+
+Open with `cmd-,` (macOS) or `ctrl-,` (Linux/Windows).
+
+## Agent Settings
+
+Core agent configuration:
+
+<CodeGroup>
+```json Basic Configuration
+{
+  "agent": {
+    "enabled": true,
+    "button": true,
+    "dock": "right",
+    "default_width": 400,
+    "default_height": 600,
+    "default_view": "agent"
+  }
+}
+```
+
+```json Model Configuration
+{
+  "agent": {
+    "default_model": {
+      "provider": "anthropic",
+      "model": "claude-4.6-sonnet",
+      "enable_thinking": false
+    },
+    "inline_assistant_model": {
+      "provider": "anthropic",
+      "model": "claude-4.6-sonnet"
+    },
+    "commit_message_model": {
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    },
+    "thread_summary_model": {
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    }
+  }
+}
+```
+
+```json Advanced Settings
+{
+  "agent": {
+    "notify_when_agent_waiting": "always",
+    "play_sound_when_agent_done": true,
+    "use_modifier_to_send": false,
+    "message_editor_min_lines": 3,
+    "show_turn_stats": false,
+    "enable_feedback": true,
+    "expand_edit_card": true,
+    "expand_terminal_card": true
+  }
+}
+```
+</CodeGroup>
+
+### Setting Descriptions
+
+<ParamField path="enabled" type="boolean" default={true}>
+  Enable or disable all AI features globally
+</ParamField>
+
+<ParamField path="button" type="boolean" default={true}>
+  Show AI button in the title bar
+</ParamField>
+
+<ParamField path="dock" type="string" default="right">
+  Panel position: `"left"`, `"right"`, or `"bottom"`
+</ParamField>
+
+<ParamField path="default_width" type="number" default={400}>
+  Default panel width in pixels (for left/right dock)
+</ParamField>
+
+<ParamField path="default_height" type="number" default={600}>
+  Default panel height in pixels (for bottom dock)
+</ParamField>
+
+<ParamField path="default_view" type="string" default="agent">
+  Initial view: `"agent"`, `"text_thread"`, or `"history"`
+</ParamField>
+
+<ParamField path="notify_when_agent_waiting" type="string" default="always">
+  When to notify: `"always"`, `"never"`, or `"unfocused"`
+</ParamField>
+
+<ParamField path="play_sound_when_agent_done" type="boolean" default={true}>
+  Play sound when agent completes a response
+</ParamField>
+
+<ParamField path="use_modifier_to_send" type="boolean" default={false}>
+  Require `cmd`/`ctrl` to send messages (Enter for newline)
+</ParamField>
+
+<ParamField path="message_editor_min_lines" type="number" default={3}>
+  Minimum lines in message editor
+</ParamField>
+
+<ParamField path="show_turn_stats" type="boolean" default={false}>
+  Show token usage and timing statistics
+</ParamField>
+
+## Tool Permissions
+
+Configure how agent tools are authorized:
+
+<CodeGroup>
+```json Global Default
+{
+  "agent": {
+    "tool_permissions": {
+      "default": "confirm"
+    }
+  }
+}
+```
+
+```json Per-Tool Configuration
+{
+  "agent": {
+    "tool_permissions": {
+      "default": "confirm",
+      "tools": {
+        "read_file": {
+          "default": "allow"
+        },
+        "edit_file": {
+          "default": "confirm"
+        },
+        "terminal": {
+          "default": "confirm",
+          "always_deny": [
+            { "pattern": "rm\\s+-rf\\s+/" },
+            { "pattern": "sudo" }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+```json Pattern-Based Rules
+{
+  "agent": {
+    "tool_permissions": {
+      "tools": {
+        "terminal": {
+          "always_allow": [
+            { "pattern": "^git\\s+status" },
+            { "pattern": "^npm\\s+test" }
+          ],
+          "always_confirm": [
+            { "pattern": "install" },
+            { "pattern": "rm" }
+          ],
+          "always_deny": [
+            { "pattern": "rm\\s+-rf\\s+/" }
+          ]
+        },
+        "edit_file": {
+          "always_deny": [
+            { "pattern": "\\.env$", "case_sensitive": false }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+### Permission Modes
+
+<Tabs>
+  <Tab title="Confirm">
+    **Confirm** (default)
+    
+    Show approval dialog before execution:
+    - Review operation details
+    - Approve or deny
+    - Remember choice for session
+    
+    Best for: Most operations
+  </Tab>
+  
+  <Tab title="Allow">
+    **Allow**
+    
+    Execute without confirmation:
+    - No dialogs
+    - Immediate execution
+    - Logged for review
+    
+    Best for: Safe, read-only operations
+  </Tab>
+  
+  <Tab title="Deny">
+    **Deny**
+    
+    Block execution:
+    - Never allowed
+    - Agent notified
+    - No user interaction
+    
+    Best for: Dangerous operations
+  </Tab>
+</Tabs>
+
+### Available Tools
+
+| Tool | Purpose | Recommended Permission |
+|------|---------|------------------------|
+| `read_file` | Read file contents | `allow` |
+| `edit_file` | Modify files | `confirm` |
+| `write_file` | Create new files | `confirm` |
+| `delete_file` | Delete files | `confirm` |
+| `terminal` | Run shell commands | `confirm` |
+| `search` | Search code | `allow` |
+| `list_directory` | Browse files | `allow` |
+
+### Pattern Matching
+
+<Tip>
+  Patterns use regex syntax. Escape special characters with `\\`.
+</Tip>
+
+Pattern precedence (highest to lowest):
+1. `always_deny` - Blocks even if allowed
+2. `always_confirm` - Requires approval
+3. `always_allow` - Skips confirmation
+4. Tool `default` - Fallback for tool
+5. Global `default` - System-wide fallback
+
+### Security Rules
+
+<Warning>
+  Glass has hardcoded security rules that cannot be overridden:
+  
+  - `rm -rf /` and variants
+  - `rm -rf ~` and variants  
+  - `rm -rf $HOME` and variants
+  
+  These are always blocked regardless of settings.
+</Warning>
+
+## Model Parameters
+
+Fine-tune model behavior:
+
+<CodeGroup>
+```json Temperature Control
+{
+  "agent": {
+    "model_parameters": [
+      {
+        "provider": "anthropic",
+        "model": "claude-4.6-sonnet",
+        "temperature": 0.7
+      },
+      {
+        "provider": "openai",
+        "temperature": 0.3
+      }
+    ]
+  }
+}
+```
+
+```json Per-Model Settings
+{
+  "agent": {
+    "model_parameters": [
+      {
+        "provider": "anthropic",
+        "model": "claude-4.6-sonnet",
+        "temperature": 0.7,
+        "max_tokens": 8192
+      },
+      {
+        "provider": "anthropic",
+        "model": "claude-4.6-opus",
+        "temperature": 0.9,
+        "max_tokens": 16384
+      }
+    ]
+  }
+}
+```
+</CodeGroup>
+
+### Parameter Reference
+
+<ParamField path="temperature" type="number" default={1.0}>
+  Randomness in responses (0.0-2.0):
+  - Lower (0.0-0.3): Focused, deterministic
+  - Medium (0.4-0.8): Balanced
+  - Higher (0.9-2.0): Creative, varied
+</ParamField>
+
+<ParamField path="max_tokens" type="number">
+  Maximum tokens in response (model-dependent)
+</ParamField>
+
+<ParamField path="top_p" type="number" default={1.0}>
+  Nucleus sampling threshold (0.0-1.0)
+</ParamField>
+
+<ParamField path="top_k" type="number">
+  Top-k sampling (provider-dependent)
+</ParamField>
+
+## Edit Predictions (Completions)
+
+Configure AI code completions:
+
+<CodeGroup>
+```json Zed Predict (Cloud)
+{
+  "edit_predictions": {
+    "provider": "zed_cloud",
+    "enabled": true,
+    "debounce_ms": 300
+  }
+}
+```
+
+```json Ollama (Local)
+{
+  "edit_predictions": {
+    "provider": "ollama",
+    "enabled": true,
+    "ollama": {
+      "api_url": "http://localhost:11434",
+      "model": "codellama:7b",
+      "options": {
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "num_predict": 50
+      }
+    }
+  }
+}
+```
+
+```json OpenAI-Compatible
+{
+  "edit_predictions": {
+    "provider": "openai_compatible_api",
+    "enabled": true,
+    "openai_compatible_api": {
+      "api_url": "https://api.example.com/v1",
+      "api_key": "your-key",
+      "model": "codellama",
+      "prompt_format": "fim"
+    }
+  }
+}
+```
+</CodeGroup>
+
+### Completion Settings
+
+<ParamField path="enabled" type="boolean" default={true}>
+  Enable/disable code completions
+</ParamField>
+
+<ParamField path="provider" type="string" default="zed_cloud">
+  Provider: `"zed_cloud"`, `"ollama"`, or `"openai_compatible_api"`
+</ParamField>
+
+<ParamField path="debounce_ms" type="number" default={300}>
+  Milliseconds to wait before requesting completion
+</ParamField>
+
+<ParamField path="show_inline" type="boolean" default={true}>
+  Show completions as ghost text
+</ParamField>
+
+<ParamField path="show_in_menu" type="boolean" default={true}>
+  Show completions in popup menu
+</ParamField>
+
+## Agent Profiles
+
+Create custom agent configurations:
+
+```json
+{
+  "agent": {
+    "default_profile": "write",
+    "profiles": {
+      "write": {
+        "default_model": {
+          "provider": "anthropic",
+          "model": "claude-4.6-sonnet"
+        },
+        "system_prompt": "You are a helpful coding assistant focused on writing clean, maintainable code."
+      },
+      "review": {
+        "default_model": {
+          "provider": "openai",
+          "model": "o1"
+        },
+        "system_prompt": "You are a code reviewer focused on finding bugs and suggesting improvements."
+      },
+      "fast": {
+        "default_model": {
+          "provider": "openai",
+          "model": "gpt-4o-mini"
+        }
+      }
+    }
+  }
+}
+```
+
+## Context Servers
+
+Configure Model Context Protocol (MCP) servers:
+
+<CodeGroup>
+```json Filesystem Server
+{
+  "context_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/project"]
+    }
+  }
+}
+```
+
+```json Git Server
+{
+  "context_servers": {
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"],
+      "env": {
+        "GIT_DIR": ".git"
+      }
+    }
+  }
+}
+```
+
+```json Custom Server
+{
+  "context_servers": {
+    "custom": {
+      "command": "python",
+      "args": ["/path/to/server.py"],
+      "env": {
+        "API_KEY": "your-key"
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+### Server Configuration
+
+<ParamField path="command" type="string" required>
+  Executable to run the server
+</ParamField>
+
+<ParamField path="args" type="array">
+  Command-line arguments
+</ParamField>
+
+<ParamField path="env" type="object">
+  Environment variables
+</ParamField>
+
+<ParamField path="required" type="boolean" default={false}>
+  Whether agent requires this server
+</ParamField>
+
+## Agent Servers
+
+Configure external agents via Agent Client Protocol:
+
+```json
+{
+  "agent_servers": {
+    "claude-code": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/claude-code"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-key"
+      }
+    },
+    "gemini": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gemini"],
+      "env": {
+        "GEMINI_API_KEY": "your-key"
+      }
+    }
+  }
+}
+```
+
+## Language-Specific Settings
+
+Override AI settings per language:
+
+```json
+{
+  "languages": {
+    "Python": {
+      "edit_predictions": {
+        "enabled": true
+      },
+      "agent": {
+        "inline_assistant_model": {
+          "provider": "anthropic",
+          "model": "claude-4.6-sonnet"
+        }
+      }
+    },
+    "Rust": {
+      "edit_predictions": {
+        "enabled": false
+      }
+    }
+  }
+}
+```
+
+## Experimental Features
+
+Enable experimental AI features:
+
+```json
+{
+  "experimental": {
+    "ai_enabled_languages": ["*"],
+    "enable_semantic_search": true,
+    "enable_context_servers": true,
+    "enable_agent_tool_streaming": true
+  }
+}
+```
+
+<Warning>
+  Experimental features may be unstable or change without notice.
+</Warning>
+
+## Complete Example
+
+Comprehensive AI configuration:
+
+```json
+{
+  "agent": {
+    "enabled": true,
+    "button": true,
+    "dock": "right",
+    "default_width": 450,
+    "default_model": {
+      "provider": "anthropic",
+      "model": "claude-4.6-sonnet"
+    },
+    "inline_assistant_model": {
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    },
+    "thread_summary_model": {
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    },
+    "model_parameters": [
+      {
+        "provider": "anthropic",
+        "temperature": 0.7
+      }
+    ],
+    "tool_permissions": {
+      "default": "confirm",
+      "tools": {
+        "read_file": { "default": "allow" },
+        "terminal": {
+          "default": "confirm",
+          "always_deny": [
+            { "pattern": "rm\\s+-rf" },
+            { "pattern": "sudo" }
+          ]
+        }
+      }
+    },
+    "notify_when_agent_waiting": "unfocused",
+    "play_sound_when_agent_done": true,
+    "show_turn_stats": true
+  },
+  "edit_predictions": {
+    "provider": "ollama",
+    "enabled": true,
+    "ollama": {
+      "api_url": "http://localhost:11434",
+      "model": "codellama:7b"
+    }
+  },
+  "context_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceRoot}"]
+    }
+  }
+}
+```
+
+## Next Steps
+
+- [Configure AI providers](/ai/providers)
+- [Learn about the agent panel](/ai/agent-panel)
+- [Explore inline assistance](/ai/inline-assistant)

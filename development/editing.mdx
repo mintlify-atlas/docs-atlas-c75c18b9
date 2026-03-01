@@ -1,0 +1,207 @@
+---
+title: Code Editing
+description: Master Glass's powerful code editing features including multi-cursor editing, selections, and text manipulation
+---
+
+Glass provides a comprehensive set of code editing features designed for efficiency and productivity. From intelligent multi-cursor support to advanced text manipulation, Glass equips you with the tools needed for modern software development.
+
+## Multi-Cursor Editing
+
+Glass supports sophisticated multi-cursor editing, allowing you to edit multiple locations simultaneously.
+
+<Steps>
+  <Step title="Select Next Occurrence">
+    Use `SelectNext` to find and select the next occurrence of your current selection. This is perfect for quickly renaming variables or making bulk edits.
+
+    ```rust
+    // From crates/editor/src/actions.rs:9
+    pub struct SelectNext {
+        pub replace_newest: bool,
+    }
+    ```
+  </Step>
+
+  <Step title="Select Previous Occurrence">
+    Use `SelectPrevious` to select the previous occurrence, giving you bidirectional control over your selections.
+  </Step>
+
+  <Step title="Multiple Independent Cursors">
+    Add cursors at arbitrary positions to edit multiple locations that don't necessarily match a pattern.
+  </Step>
+</Steps>
+
+## Line Operations
+
+Glass offers precise control over line-level text manipulation.
+
+### Moving Within Lines
+
+<Tabs>
+  <Tab title="Beginning of Line">
+    The `MoveToBeginningOfLine` action supports smart navigation:
+
+    ```rust
+    pub struct MoveToBeginningOfLine {
+        pub stop_at_soft_wraps: bool,
+        pub stop_at_indent: bool,
+    }
+    ```
+
+    - **stop_at_soft_wraps**: Respects soft-wrapped lines
+    - **stop_at_indent**: First stop at indentation, then at the actual beginning
+  </Tab>
+
+  <Tab title="End of Line">
+    Navigate to the end of lines with `MoveToEndOfLine`, which also respects soft wraps for natural editing flow.
+  </Tab>
+</Tabs>
+
+### Selecting and Deleting
+
+Glass provides corresponding selection and deletion operations:
+
+- `SelectToBeginningOfLine` / `SelectToEndOfLine` - Extend selections
+- `DeleteToBeginningOfLine` / `DeleteToEndOfLine` - Remove text efficiently
+- `CutToEndOfLine` - Cut text from cursor to end of line
+
+<Note>
+All line operations respect the editor's soft wrap settings, ensuring natural editing behavior even with long lines.
+</Note>
+
+## Word and Subword Navigation
+
+Glass distinguishes between words and subwords, supporting both programming conventions like camelCase and snake_case.
+
+### Word Operations
+
+```rust
+// Delete operations support fine-grained control
+pub struct DeleteToNextWordEnd {
+    pub ignore_newlines: bool,
+    pub ignore_brackets: bool,
+}
+```
+
+Available word operations:
+- `DeleteToNextWordEnd` / `DeleteToPreviousWordStart`
+- `DeleteToNextSubwordEnd` / `DeleteToPreviousSubwordStart`
+
+<Tip>
+Use subword operations when working with camelCase or PascalCase identifiers to navigate and edit more precisely.
+</Tip>
+
+## Code Manipulation
+
+### Comments
+
+Toggle comments with fine-grained control:
+
+```rust
+pub struct ToggleComments {
+    pub advance_downwards: bool,
+    pub ignore_indent: bool,
+}
+```
+
+- **advance_downwards**: Move cursor down after toggling
+- **ignore_indent**: Don't adjust comment position based on indentation
+
+### Code Folding
+
+Collapse code blocks to focus on what matters:
+
+- `FoldAtLevel(u32)` - Fold all blocks at a specific indentation level
+- Useful for getting a high-level view of large files
+
+## Page Navigation
+
+Move through your code efficiently:
+
+```rust
+pub struct MovePageUp {
+    pub center_cursor: bool,
+}
+
+pub struct MovePageDown {
+    pub center_cursor: bool,
+}
+```
+
+When `center_cursor` is true, the cursor is centered vertically after the page movement, maintaining visual context.
+
+## Movement System
+
+Glass's movement module provides sophisticated navigation that accounts for:
+
+- **Soft wraps**: Navigate naturally through wrapped lines
+- **Variable-width characters**: Proper handling of Unicode and special characters
+- **Display vs. buffer coordinates**: Consistent behavior with folds and inlays
+
+```rust
+// From crates/editor/src/movement.rs
+pub struct TextLayoutDetails {
+    pub text_system: Arc<WindowTextSystem>,
+    pub editor_style: EditorStyle,
+    pub rem_size: Pixels,
+    pub scroll_anchor: SharedScrollAnchor,
+    pub visible_rows: Option<f64>,
+    pub vertical_scroll_margin: ScrollOffset,
+}
+```
+
+<Tip>
+Glass's movement system ensures that navigation feels natural regardless of how your code is displayed, whether folded, wrapped, or decorated with inlays.
+</Tip>
+
+## Advanced Text Selection
+
+### Extending Selections by Lines
+
+Precisely control your selection scope:
+
+```rust
+pub struct SelectUpByLines {
+    pub lines: u32,
+}
+
+pub struct SelectDownByLines {
+    pub lines: u32,
+}
+```
+
+These actions allow you to expand selections by a specific number of lines, perfect for quick block selections.
+
+### Excerpt Expansion
+
+When working with excerpted views (like search results), expand context as needed:
+
+- `ExpandExcerpts` - Expand all excerpts
+- `ExpandExcerptsUp` - Expand above current position
+- `ExpandExcerptsDown` - Expand below current position
+
+## Code Context
+
+The editor maintains rich context about your code:
+
+- **Syntax-aware movement**: Understands brackets, words, and language structure
+- **Bracket matching**: Automatic highlighting of matching brackets
+- **Indent guides**: Visual feedback for code structure
+- **Inlay hints**: Inline type hints and parameter names from LSP
+
+<Note>
+The editor's display map system (crates/editor/src/display_map.rs) manages the transformation between buffer content and what you see on screen, handling folds, wraps, inlays, and more.
+</Note>
+
+## Best Practices
+
+1. **Use multi-cursor editing** for repetitive changes instead of find-and-replace
+2. **Leverage subword navigation** when working with camelCase or snake_case
+3. **Combine selections with actions** - many operations work on all active selections
+4. **Fold code strategically** to maintain context while focusing on specific areas
+5. **Use soft wraps** for better visibility of long lines without manual line breaks
+
+## Related Features
+
+- [Navigation](/development/navigation) - Go to definition, find references, and symbol navigation
+- [Git Integration](/development/git-integration) - View diffs and blame information inline
+- [Testing](/development/testing) - Run tasks and tests from your editor

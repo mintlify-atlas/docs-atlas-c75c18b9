@@ -1,0 +1,464 @@
+---
+title: Extension API Overview
+description: Complete reference for the Glass Extension API to build powerful extensions in Rust
+---
+
+## Introduction
+
+The Glass Extension API allows you to write extensions for Glass code editor in Rust. Extensions run in a secure WebAssembly (WASM) sandbox and can:
+
+- Integrate language servers for code intelligence
+- Add custom slash commands to the AI assistant
+- Provide context servers for AI features
+- Configure debugging adapters (DAP)
+- Index documentation for the `/docs` command
+
+<Note>
+  Extensions are compiled to WebAssembly and run in an isolated environment. This provides security while enabling rich functionality.
+</Note>
+
+## Core Concepts
+
+### Extension Trait
+
+All extensions implement the `Extension` trait, which defines lifecycle methods and integration points:
+
+```rust
+use zed_extension_api::{self as zed, Result, LanguageServerId};
+
+struct MyExtension {
+    // Extension state
+}
+
+impl zed::Extension for MyExtension {
+    fn new() -> Self {
+        Self { /* initialize */ }
+    }
+
+    fn language_server_command(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<zed::Command> {
+        // Return command to start language server
+        Ok(zed::Command {
+            command: "language-server".to_string(),
+            args: vec!["--stdio".to_string()],
+            env: Default::default(),
+        })
+    }
+}
+
+zed::register_extension!(MyExtension);
+```
+
+### Extension Registration
+
+Register your extension using the `register_extension!` macro at the end of your main module:
+
+```rust
+zed::register_extension!(MyExtension);
+```
+
+This macro generates the WebAssembly exports needed for Glass to initialize and communicate with your extension.
+
+## Extension Trait Methods
+
+The `Extension` trait provides many optional methods you can implement:
+
+### Language Server Integration
+
+<ParamField path="language_server_command" type="fn">
+  Returns the command to start a language server process.
+
+  **Parameters:**
+  - `language_server_id: &LanguageServerId` - ID of the language server
+  - `worktree: &Worktree` - The project worktree
+
+  **Returns:** `Result<Command>` - Command to execute
+</ParamField>
+
+<ParamField path="language_server_initialization_options" type="fn">
+  Returns initialization options passed to the language server on startup.
+
+  **Parameters:**
+  - `language_server_id: &LanguageServerId`
+  - `worktree: &Worktree`
+
+  **Returns:** `Result<Option<serde_json::Value>>` - JSON initialization options
+</ParamField>
+
+<ParamField path="language_server_workspace_configuration" type="fn">
+  Returns workspace configuration options for the language server.
+
+  **Parameters:**
+  - `language_server_id: &LanguageServerId`
+  - `worktree: &Worktree`
+
+  **Returns:** `Result<Option<serde_json::Value>>` - JSON configuration
+</ParamField>
+
+### Completion and Symbol Labels
+
+<ParamField path="label_for_completion" type="fn">
+  Customizes how code completions are displayed.
+
+  **Parameters:**
+  - `language_server_id: &LanguageServerId`
+  - `completion: Completion` - The completion item
+
+  **Returns:** `Option<CodeLabel>` - Custom label or None for default
+</ParamField>
+
+<ParamField path="label_for_symbol" type="fn">
+  Customizes how symbols are displayed in symbol search.
+
+  **Parameters:**
+  - `language_server_id: &LanguageServerId`
+  - `symbol: Symbol` - The symbol
+
+  **Returns:** `Option<CodeLabel>` - Custom label or None
+</ParamField>
+
+### Slash Commands
+
+<ParamField path="complete_slash_command_argument" type="fn">
+  Provides completions for slash command arguments.
+
+  **Parameters:**
+  - `command: SlashCommand` - The slash command being completed
+  - `args: Vec<String>` - Current arguments
+
+  **Returns:** `Result<Vec<SlashCommandArgumentCompletion>>`
+</ParamField>
+
+<ParamField path="run_slash_command" type="fn">
+  Executes a slash command.
+
+  **Parameters:**
+  - `command: SlashCommand`
+  - `args: Vec<String>` - Command arguments
+  - `worktree: Option<&Worktree>`
+
+  **Returns:** `Result<SlashCommandOutput>` - Command output for the AI assistant
+</ParamField>
+
+### Context Servers
+
+<ParamField path="context_server_command" type="fn">
+  Returns command to start a Model Context Protocol (MCP) server.
+
+  **Parameters:**
+  - `context_server_id: &ContextServerId`
+  - `project: &Project`
+
+  **Returns:** `Result<Command>`
+</ParamField>
+
+<ParamField path="context_server_configuration" type="fn">
+  Returns configuration for a context server.
+
+  **Parameters:**
+  - `context_server_id: &ContextServerId`
+  - `project: &Project`
+
+  **Returns:** `Result<Option<ContextServerConfiguration>>`
+</ParamField>
+
+### Documentation Indexing
+
+<ParamField path="suggest_docs_packages" type="fn">
+  Suggests package names for `/docs` command completions.
+
+  **Parameters:**
+  - `provider: String` - Documentation provider name
+
+  **Returns:** `Result<Vec<String>>` - List of package names
+</ParamField>
+
+<ParamField path="index_docs" type="fn">
+  Indexes documentation for a specific package.
+
+  **Parameters:**
+  - `provider: String`
+  - `package: String` - Package name to index
+  - `database: &KeyValueStore` - Storage for indexed data
+
+  **Returns:** `Result<()>`
+</ParamField>
+
+### Debug Adapter Protocol (DAP)
+
+<ParamField path="get_dap_binary" type="fn">
+  Returns the debug adapter binary path.
+
+  **Parameters:**
+  - `adapter_name: String`
+  - `config: DebugTaskDefinition`
+  - `user_provided_debug_adapter_path: Option<String>`
+  - `worktree: &Worktree`
+
+  **Returns:** `Result<DebugAdapterBinary>`
+</ParamField>
+
+<ParamField path="dap_request_kind" type="fn">
+  Determines if debug request is launch or attach.
+
+  **Parameters:**
+  - `adapter_name: String`
+  - `config: serde_json::Value`
+
+  **Returns:** `Result<StartDebuggingRequestArgumentsRequest>`
+</ParamField>
+
+<ParamField path="dap_config_to_scenario" type="fn">
+  Converts high-level debug config to adapter-specific scenario.
+
+  **Parameters:**
+  - `config: DebugConfig`
+
+  **Returns:** `Result<DebugScenario>`
+</ParamField>
+
+## Resources
+
+The Extension API provides several resource types representing editor state:
+
+### Worktree
+
+Represents a project worktree (folder):
+
+```rust
+let root = worktree.root_path();
+let id = worktree.id();
+let contents = worktree.read_text_file("path/to/file.txt")?;
+let node_path = worktree.which("node");
+let env = worktree.shell_env();
+```
+
+<ResponseField name="id" type="u64">
+  Returns the unique ID of this worktree
+</ResponseField>
+
+<ResponseField name="root_path" type="String">
+  Returns the absolute path to the worktree root
+</ResponseField>
+
+<ResponseField name="read_text_file" type="Result<String>">
+  Reads a text file from the worktree
+</ResponseField>
+
+<ResponseField name="which" type="Option<String>">
+  Finds a binary in PATH, returns absolute path if found
+</ResponseField>
+
+<ResponseField name="shell_env" type="EnvVars">
+  Returns the current shell environment variables
+</ResponseField>
+
+### Project
+
+Represents the entire project:
+
+```rust
+let worktree_ids = project.worktree_ids();
+```
+
+<ResponseField name="worktree_ids" type="Vec<u64>">
+  Returns IDs of all worktrees in the project
+</ResponseField>
+
+### KeyValueStore
+
+Simple key-value storage for extension data:
+
+```rust
+database.insert("key", "value")?;
+```
+
+<ResponseField name="insert" type="Result<()>">
+  Stores a key-value pair. Both key and value must be strings.
+</ResponseField>
+
+## Helper Functions
+
+### Language Server Status
+
+```rust
+zed::set_language_server_installation_status(
+    &language_server_id,
+    &zed::LanguageServerInstallationStatus::Downloading,
+);
+```
+
+Status values:
+- `None` - No status
+- `Downloading` - Downloading language server
+- `CheckingForUpdate` - Checking for updates
+- `Failed(String)` - Installation failed with reason
+
+### File Downloads
+
+```rust
+use zed::DownloadedFileType;
+
+zed::download_file(
+    "https://example.com/server.tar.gz",
+    "language-server/server",
+    DownloadedFileType::GzipTar,
+)?;
+
+zed::make_file_executable("language-server/server")?;
+```
+
+<Warning>
+  Downloads are saved relative to the extension's working directory, not the project root.
+</Warning>
+
+### Node.js Integration
+
+```rust
+// Get node binary path
+let node = zed::node_binary_path()?;
+
+// Install npm package
+let version = zed::npm_package_latest_version("typescript-language-server")?;
+zed::npm_install_package("typescript-language-server", &version)?;
+
+// Check installed version
+let installed = zed::npm_package_installed_version("typescript-language-server")?;
+```
+
+### GitHub Releases
+
+```rust
+use zed::{latest_github_release, GithubReleaseOptions};
+
+let release = latest_github_release(
+    "rust-lang/rust-analyzer",
+    GithubReleaseOptions {
+        require_assets: true,
+        pre_release: false,
+    },
+)?;
+
+for asset in release.assets {
+    if asset.name.contains("linux") {
+        // Download this asset
+    }
+}
+```
+
+### Platform Detection
+
+```rust
+use zed::{current_platform, Os, Architecture};
+
+let platform = current_platform();
+match platform.os {
+    Os::Mac => { /* macOS-specific logic */ }
+    Os::Linux => { /* Linux-specific logic */ }
+    Os::Windows => { /* Windows-specific logic */ }
+}
+
+match platform.arch {
+    Architecture::Aarch64 => { /* ARM64 */ }
+    Architecture::X8664 => { /* x86_64 */ }
+    Architecture::X86 => { /* x86 */ }
+}
+```
+
+## Complete Example
+
+Here's a complete extension that integrates a Node.js-based language server:
+
+```rust
+use zed_extension_api::{self as zed, LanguageServerId, Result};
+use std::fs;
+
+const SERVER_PATH: &str = "node_modules/.bin/typescript-language-server";
+const PACKAGE_NAME: &str = "typescript-language-server";
+
+struct TypeScriptExtension {
+    cached_binary_path: Option<String>,
+}
+
+impl zed::Extension for TypeScriptExtension {
+    fn new() -> Self {
+        Self {
+            cached_binary_path: None,
+        }
+    }
+
+    fn language_server_command(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<zed::Command> {
+        // Check if server exists in PATH first
+        if let Some(path) = worktree.which("typescript-language-server") {
+            return Ok(zed::Command {
+                command: path,
+                args: vec!["--stdio".to_string()],
+                env: Default::default(),
+            });
+        }
+
+        // Otherwise install via npm
+        if !fs::metadata(SERVER_PATH).is_ok() {
+            zed::set_language_server_installation_status(
+                language_server_id,
+                &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+            );
+
+            let version = zed::npm_package_latest_version(PACKAGE_NAME)?;
+
+            zed::set_language_server_installation_status(
+                language_server_id,
+                &zed::LanguageServerInstallationStatus::Downloading,
+            );
+
+            zed::npm_install_package(PACKAGE_NAME, &version)?;
+        }
+
+        let node_path = zed::node_binary_path()?;
+        Ok(zed::Command {
+            command: node_path,
+            args: vec![SERVER_PATH.to_string(), "--stdio".to_string()],
+            env: Default::default(),
+        })
+    }
+
+    fn language_server_initialization_options(
+        &mut self,
+        _server_id: &LanguageServerId,
+        _worktree: &zed::Worktree,
+    ) -> Result<Option<zed::serde_json::Value>> {
+        Ok(Some(zed::serde_json::json!({
+            "preferences": {
+                "includeInlayParameterNameHints": "all",
+                "includeInlayFunctionParameterTypeHints": true,
+            }
+        })))
+    }
+}
+
+zed::register_extension!(TypeScriptExtension);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Language Server Integration" icon="server" href="/extensions/api/language-server">
+    Learn how to integrate language servers with LSP
+  </Card>
+  <Card title="Commands API" icon="terminal" href="/extensions/api/commands">
+    Execute commands and manage processes
+  </Card>
+  <Card title="Configuration" icon="gear" href="/extensions/api/configuration">
+    Access and use extension settings
+  </Card>
+  <Card title="Extension Examples" icon="code" href="/extensions/examples">
+    See complete working examples
+  </Card>
+</CardGroup>

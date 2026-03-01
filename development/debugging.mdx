@@ -1,0 +1,444 @@
+---
+title: Debugging
+description: Debug your applications with Glass's integrated debugger supporting breakpoints, stepping, and variable inspection
+---
+
+Glass provides a comprehensive debugging experience through the Debug Adapter Protocol (DAP), supporting multiple programming languages and debugging scenarios.
+
+## Debug Panel
+
+The Debug Panel is your central hub for all debugging activities in Glass.
+
+### Panel Overview
+
+```rust
+// From crates/debugger_ui/src/debugger_panel.rs
+pub struct DebugPanel {
+    active_session: Option<Entity<DebugSession>>,
+    project: Entity<Project>,
+    workspace: WeakEntity<Workspace>,
+    focus_handle: FocusHandle,
+    breakpoint_list: Entity<BreakpointList>,
+    // ...
+}
+```
+
+<Tabs>
+  <Tab title="Variables">
+    Inspect local variables, arguments, and captured values in the current scope. The variables view updates automatically as you step through code.
+  </Tab>
+
+  <Tab title="Call Stack">
+    View the call stack (frames) to understand how execution reached the current point. Click any frame to inspect its variables and source.
+  </Tab>
+
+  <Tab title="Breakpoints">
+    Manage all breakpoints in your project. Enable, disable, or remove breakpoints, and add conditions or hit counts.
+  </Tab>
+
+  <Tab title="Console">
+    View debug output, log messages, and interact with your running application through the debug console.
+  </Tab>
+</Tabs>
+
+### Panel Actions
+
+Common debug panel actions:
+
+```rust
+// From crates/debugger_ui/src/debugger_panel.rs
+FocusVariables,
+FocusFrames,
+FocusBreakpointList,
+FocusConsole,
+FocusTerminal,
+FocusLoadedSources,
+FocusModules,
+```
+
+## Starting Debug Sessions
+
+Glass supports multiple ways to start debugging your code.
+
+<Steps>
+  <Step title="Launch Configuration">
+    Define debug scenarios in your project's `.glass/tasks.json` or `.vscode/launch.json`:
+
+    ```json
+    {
+      "adapter": "debugpy",
+      "label": "Debug Python App",
+      "config": {
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Attach to Process">
+    Attach to already-running processes using the attach request type:
+
+    ```rust
+    // From crates/task/src/debug_format.rs
+    pub enum Request {
+        Launch(LaunchRequest),
+        Attach(AttachRequest),
+    }
+    ```
+  </Step>
+
+  <Step title="Quick Debug">
+    Use quick debug actions to start debugging without manual configuration, using sensible defaults for your language.
+  </Step>
+</Steps>
+
+### Debug Adapters
+
+```rust
+// From crates/dap/src/adapters.rs
+pub struct DebugAdapterName(pub String);
+```
+
+Glass supports multiple debug adapters:
+- **debugpy** - Python debugging
+- **lldb / codelldb** - C, C++, Rust debugging
+- **node** - JavaScript/TypeScript debugging
+- **go** - Go debugging
+- And more through DAP extensions
+
+<Note>
+Debug adapters are automatically detected and installed based on your project's language. You can also manually configure adapter paths in settings.
+</Note>
+
+## Breakpoints
+
+Set and manage breakpoints to pause execution at specific locations.
+
+### Breakpoint Types
+
+```rust
+// From crates/project/src/debugger/breakpoint_store.rs
+pub struct Breakpoint {
+    // Breakpoint configuration
+}
+
+pub enum BreakpointState {
+    // Active, disabled, or pending
+}
+```
+
+<Tabs>
+  <Tab title="Line Breakpoints">
+    Click the gutter next to any line number to set a breakpoint. The breakpoint will pause execution when that line is reached.
+  </Tab>
+
+  <Tab title="Conditional Breakpoints">
+    Add conditions to breakpoints so they only trigger when specific criteria are met:
+
+    ```javascript
+    // Only break when count > 10
+    count > 10
+    ```
+  </Tab>
+
+  <Tab title="Hit Count Breakpoints">
+    Configure breakpoints to trigger only after being hit a certain number of times, useful for debugging loops.
+  </Tab>
+
+  <Tab title="Logpoints">
+    Instead of pausing, log a message when execution reaches a specific line. Great for non-intrusive debugging.
+  </Tab>
+</Tabs>
+
+### Breakpoint Management
+
+```rust
+pub enum BreakpointEditAction {
+    Add,
+    Remove,
+    Toggle,
+}
+```
+
+Breakpoint actions:
+- **Toggle breakpoint** at current line
+- **Clear all breakpoints** in the project
+- **Enable/disable** individual breakpoints
+- **Add conditions** or hit counts
+
+<Warning>
+Breakpoints in files that haven't been loaded by the debugger will show as "pending" until the debugger loads that code.
+</Warning>
+
+## Execution Control
+
+Control program execution with precision.
+
+### Step Commands
+
+```rust
+// Available stepping actions
+Continue,
+Pause,
+StepOver,
+StepInto,
+StepOut,
+Stop,
+```
+
+<Steps>
+  <Step title="Continue">
+    Resume execution until the next breakpoint or program completion.
+  </Step>
+
+  <Step title="Step Over">
+    Execute the current line and move to the next line, treating function calls as single steps.
+  </Step>
+
+  <Step title="Step Into">
+    Step into function calls to debug their internals.
+  </Step>
+
+  <Step title="Step Out">
+    Complete execution of the current function and pause at the caller.
+  </Step>
+</Steps>
+
+### Session Management
+
+```rust
+// From crates/debugger_ui/src/debugger_panel.rs
+pub fn start_session(
+    &mut self,
+    scenario: DebugScenario,
+    task_context: SharedTaskContext,
+    active_buffer: Option<Entity<Buffer>>,
+    worktree_id: Option<WorktreeId>,
+    window: &mut Window,
+    cx: &mut Context<Self>,
+)
+```
+
+Session actions:
+- **Start new session** with a debug scenario
+- **Stop session** to terminate debugging
+- **Restart session** to rerun with same configuration
+- **Detach** from attached processes
+
+```rust
+RerunSession,
+Stop,
+Detach,
+```
+
+## Variable Inspection
+
+Examine and modify program state while debugging.
+
+### Variables View
+
+```rust
+// Variables are represented with references for complex objects
+pub type VariableReference = u64;
+```
+
+Inspect variables:
+- **Local variables** in current scope
+- **Global variables** and static values
+- **Closure captures** in functional languages
+- **Object properties** expanded hierarchically
+
+### Scopes
+
+```rust
+pub type ScopeId = u64;
+```
+
+Glass shows variables organized by scope:
+- **Local** - Function parameters and local variables
+- **Global** - Module-level and global variables  
+- **Closure** - Captured variables from outer scopes
+
+<Tip>
+Expand complex objects in the variables view to explore nested properties. Some debuggers support lazy loading of large data structures.
+</Tip>
+
+## Call Stack
+
+Understand the execution path that led to the current state.
+
+### Stack Frames
+
+```rust
+pub type StackFrameId = u64;
+
+pub enum ThreadStatus {
+    // Thread state: running, stopped, etc.
+}
+```
+
+The call stack shows:
+- **Function names** at each level
+- **Source locations** with file and line
+- **Frame indices** for reference
+- **Thread information** in multi-threaded apps
+
+Click any frame to:
+- View its source code
+- Inspect its variables
+- Evaluate expressions in its context
+
+## Debug Console
+
+Interact with your running application through the debug console.
+
+### Evaluate Expressions
+
+Type expressions to evaluate them in the context of the current stack frame:
+
+```python
+# Python example
+len(my_list)
+obj.property + 10
+```
+
+### REPL Integration
+
+Some debug adapters provide full REPL functionality, allowing you to:
+- Execute arbitrary code
+- Call functions
+- Modify variables
+- Import modules
+
+## Debug Adapter Protocol
+
+Glass implements the Debug Adapter Protocol for universal debugging support.
+
+### DAP Implementation
+
+```rust
+// From crates/dap/src/dap.rs
+pub use dap_types::*;
+pub use registry::{DapRegistry, DapLocator};
+```
+
+DAP features:
+- **Standardized protocol** across languages
+- **Extensible through adapters**
+- **Rich debugging capabilities**
+- **Terminal integration** for console output
+
+### Session Configuration
+
+```rust
+pub struct SessionQuirks {
+    pub compact: bool,
+    pub prefer_thread_name: bool,
+}
+```
+
+Glass handles adapter-specific quirks and behaviors automatically, ensuring consistent debugging experience.
+
+## TCP Debugging
+
+For remote debugging scenarios:
+
+```rust
+pub async fn configure_tcp_connection(
+    tcp_connection: TcpArgumentsTemplate,
+) -> anyhow::Result<(Ipv4Addr, u16, Option<u64>)>
+```
+
+Connect to remote debug servers:
+- Specify **host and port**
+- Configure **connection timeout**
+- Debug **containerized applications**
+- Remote **server debugging**
+
+## Build Tasks
+
+Run build tasks before debugging:
+
+```rust
+// From crates/task/src/debug_format.rs
+pub struct DebugScenario {
+    pub adapter: String,
+    pub label: String,
+    pub config: serde_json::Value,
+    pub build: Option<BuildTaskDefinition>,
+}
+```
+
+Debug scenarios can specify build tasks that run automatically before launching the debugger.
+
+<Note>
+Build tasks ensure your code is compiled with debug symbols before debugging starts, providing accurate source mapping and variable information.
+</Note>
+
+## Advanced Features
+
+### Multiple Sessions
+
+```rust
+pub(crate) sessions_with_children:
+    IndexMap<Entity<DebugSession>, Vec<WeakEntity<DebugSession>>>,
+```
+
+Glass supports:
+- **Multiple concurrent debug sessions**
+- **Parent-child session relationships**
+- **Session picker** to switch between active sessions
+
+### Thread Management
+
+For multi-threaded applications:
+- **Thread picker** to select which thread to inspect
+- **Per-thread call stacks**
+- **Thread-specific stepping**
+
+### Inline Values
+
+```rust
+// From crates/dap/src/inline_value.rs
+```
+
+Some adapters support inline value display, showing variable values directly in the editor without opening the variables panel.
+
+## Best Practices
+
+1. **Use conditional breakpoints** to avoid stopping on every iteration in loops
+2. **Leverage logpoints** for non-intrusive debugging in production-like environments
+3. **Organize breakpoints** - disable rather than delete breakpoints you might need later
+4. **Use the debug console** to quickly test hypotheses without modifying code
+5. **Configure build tasks** in debug scenarios to ensure code is always up-to-date
+6. **Master stepping** - know when to step over vs. step into
+7. **Explore stack frames** to understand call chains and variable scopes
+
+## Troubleshooting
+
+### Debugger Won't Start
+
+- Verify debug adapter is installed
+- Check debug configuration syntax
+- Review console output for error messages
+- Ensure build tasks complete successfully
+
+### Breakpoints Not Hitting
+
+- Confirm code is compiled with debug symbols
+- Check that source maps are correct
+- Verify the file path matches the running code
+- Look for "pending" breakpoint status
+
+### Variables Show "optimized out"
+
+- Compile with debug symbols and without optimizations
+- Some values may be legitimately optimized away by the compiler
+
+## Related Features
+
+- [Testing](/development/testing) - Run tests and tasks from the editor
+- [Navigation](/development/navigation) - Navigate code while debugging
+- [Git Integration](/development/git-integration) - Debug specific commits or branches

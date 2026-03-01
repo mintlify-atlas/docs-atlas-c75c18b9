@@ -1,0 +1,486 @@
+---
+title: Extension System
+description: Powerful extension system for adding languages, themes, language servers, and custom functionality
+---
+
+## Overview
+
+Glass features a comprehensive extension system that allows developers to add new languages, themes, language servers, debuggers, and custom functionality. Extensions are built using WebAssembly (WASM) for security and cross-platform compatibility.
+
+## Extension Manifest
+
+### Basic Structure
+
+```toml
+# extension.toml
+id = "my-extension"
+name = "My Extension"
+version = "0.1.0"
+schema_version = 1
+description = "A custom extension for Glass"
+repository = "https://github.com/user/my-extension"
+authors = ["Your Name <email@example.com>"]
+```
+
+### Manifest Fields
+
+```rust
+// From crates/extension/src/extension_manifest.rs
+pub struct ExtensionManifest {
+    pub id: Arc<str>,
+    pub name: String,
+    pub version: Arc<str>,
+    pub schema_version: SchemaVersion,
+    pub description: Option<String>,
+    pub repository: Option<String>,
+    pub authors: Vec<String>,
+    // ...
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Required Fields" icon="asterisk">
+    - `id`: Unique extension identifier
+    - `name`: Human-readable name
+    - `version`: Semantic version
+    - `schema_version`: Manifest schema version
+  </Card>
+  <Card title="Optional Fields" icon="circle-info">
+    - `description`: Extension description
+    - `repository`: Source code URL
+    - `authors`: Extension authors
+  </Card>
+</CardGroup>
+
+## Extension Capabilities
+
+### Provided Features
+
+```rust
+pub fn provides(&self) -> BTreeSet<ExtensionProvides> {
+    // Returns set of features this extension provides
+}
+
+pub enum ExtensionProvides {
+    Themes,
+    IconThemes,
+    Languages,
+    Grammars,
+    LanguageServers,
+    ContextServers,
+    AgentServers,
+    Snippets,
+    DebugAdapters,
+}
+```
+
+Extensions can provide:
+
+<Tabs>
+  <Tab title="Languages & Syntax">
+    - **Languages**: Language definitions
+    - **Grammars**: Tree-sitter grammars for syntax highlighting
+    - **Snippets**: Code snippet libraries
+  </Tab>
+  <Tab title="Appearance">
+    - **Themes**: Color themes for the editor
+    - **Icon Themes**: File and folder icon sets
+  </Tab>
+  <Tab title="Development Tools">
+    - **Language Servers**: LSP server integrations
+    - **Debug Adapters**: DAP debugger integrations
+    - **Context Servers**: External context providers
+  </Tab>
+</Tabs>
+
+## Language Support
+
+### Adding a Language
+
+```toml
+# extension.toml
+[[languages]]
+path = "languages/rust.json"
+```
+
+```json
+// languages/rust.json
+{
+  "name": "Rust",
+  "grammar": "rust",
+  "path_suffixes": ["rs"],
+  "line_comments": ["// "],
+  "block_comment": ["/* ", " */"]
+}
+```
+
+### Grammar Configuration
+
+```toml
+[grammars.rust]
+repository = "https://github.com/tree-sitter/tree-sitter-rust"
+commit = "v0.20.4"
+```
+
+Tree-sitter grammars provide:
+
+- Syntax highlighting
+- Code folding
+- Structural navigation
+- Smart selection
+
+## Language Server Integration
+
+### Language Server Configuration
+
+```toml
+[language_servers.rust-analyzer]
+name = "rust-analyzer"
+languages = ["Rust"]
+```
+
+### Extension API
+
+```rust
+// From crates/extension/src/extension.rs
+async fn language_server_command(
+    &self,
+    language_server_id: LanguageServerName,
+    language_name: LanguageName,
+    worktree: Arc<dyn WorktreeDelegate>,
+) -> Result<Command>
+
+async fn language_server_initialization_options(
+    &self,
+    language_server_id: LanguageServerName,
+    language_name: LanguageName,
+    worktree: Arc<dyn WorktreeDelegate>,
+) -> Result<Option<String>>
+```
+
+Implement language server integration:
+
+<Steps>
+  <Step title="Define Server">
+    Specify the language server in the manifest
+  </Step>
+  <Step title="Provide Command">
+    Return the command to launch the server
+  </Step>
+  <Step title="Configure Options">
+    Set initialization and workspace options
+  </Step>
+  <Step title="Customize Labels">
+    Optionally customize completion and symbol labels
+  </Step>
+</Steps>
+
+### Advanced Configuration
+
+```rust
+async fn language_server_workspace_configuration(
+    &self,
+    language_server_id: LanguageServerName,
+    worktree: Arc<dyn WorktreeDelegate>,
+) -> Result<Option<String>>
+
+async fn language_server_additional_initialization_options(
+    &self,
+    language_server_id: LanguageServerName,
+    target_language_server_id: LanguageServerName,
+    worktree: Arc<dyn WorktreeDelegate>,
+) -> Result<Option<String>>
+```
+
+## Themes
+
+### Theme Structure
+
+```toml
+themes = ["themes/my-theme.json"]
+icon_themes = ["icon-themes/my-icons.json"]
+```
+
+Themes define:
+
+- Editor color schemes
+- Syntax highlighting colors
+- UI element colors
+- Terminal colors
+
+### Icon Themes
+
+Customize file and folder icons:
+
+- File type associations
+- Folder icons
+- Special file indicators
+
+## Snippets
+
+### Snippet Configuration
+
+```toml
+snippets = "snippets"
+# or
+snippets = ["snippets/rust.json", "snippets/common.json"]
+```
+
+```rust
+pub enum ExtensionSnippets {
+    Single(PathBuf),
+    Multiple(Vec<PathBuf>),
+}
+```
+
+Provide code snippets for quick insertion:
+
+- Language-specific snippets
+- Global snippets
+- Tab stop navigation
+- Variable substitution
+
+## Debug Adapters
+
+### Debug Adapter Protocol (DAP)
+
+```toml
+[debug_adapters.lldb]
+name = "lldb-dap"
+languages = ["Rust", "C", "C++"]
+```
+
+```rust
+async fn get_dap_binary(
+    &self,
+    dap_name: Arc<str>,
+    config: DebugTaskDefinition,
+    user_installed_path: Option<PathBuf>,
+    worktree: Arc<dyn WorktreeDelegate>,
+) -> Result<DebugAdapterBinary>
+
+async fn dap_request_kind(
+    &self,
+    dap_name: Arc<str>,
+    config: serde_json::Value,
+) -> Result<StartDebuggingRequestArgumentsRequest>
+```
+
+Integrate debuggers:
+
+<CardGroup cols={2}>
+  <Card title="Setup" icon="gear">
+    - Specify debug adapter binary
+    - Configure launch parameters
+    - Map to supported languages
+  </Card>
+  <Card title="Features" icon="bug">
+    - Breakpoints
+    - Variable inspection
+    - Step debugging
+    - Call stack navigation
+  </Card>
+</CardGroup>
+
+## Slash Commands
+
+### Custom Slash Commands
+
+```toml
+[slash_commands.my-command]
+name = "my-command"
+description = "Custom slash command"
+```
+
+```rust
+async fn run_slash_command(
+    &self,
+    command: SlashCommand,
+    arguments: Vec<String>,
+    worktree: Option<Arc<dyn WorktreeDelegate>>,
+) -> Result<SlashCommandOutput>
+
+async fn complete_slash_command_argument(
+    &self,
+    command: SlashCommand,
+    arguments: Vec<String>,
+) -> Result<Vec<SlashCommandArgumentCompletion>>
+```
+
+Create custom commands for the AI assistant:
+
+- Define command behavior
+- Provide argument completion
+- Access worktree context
+- Return structured output
+
+## Context Servers
+
+### Context Server Configuration
+
+```toml
+[context_servers.my-context]
+command = "./context-server"
+```
+
+```rust
+async fn context_server_command(
+    &self,
+    context_server_id: Arc<str>,
+    project: Arc<dyn ProjectDelegate>,
+) -> Result<Command>
+
+async fn context_server_configuration(
+    &self,
+    context_server_id: Arc<str>,
+    project: Arc<dyn ProjectDelegate>,
+) -> Result<Option<ContextServerConfiguration>>
+```
+
+Provide external context to the AI assistant:
+
+- Database schemas
+- API documentation
+- Project-specific knowledge
+- Real-time data sources
+
+## Security and Capabilities
+
+### Process Execution
+
+```rust
+pub fn allow_exec(
+    &self,
+    desired_command: &str,
+    desired_args: &[impl AsRef<str> + std::fmt::Debug],
+) -> Result<()>
+```
+
+### Capability Declaration
+
+```toml
+[[capabilities]]
+type = "process-exec"
+command = "node"
+args = ["--version"]
+```
+
+<Warning>
+Extensions must explicitly declare process execution capabilities in their manifest for security.
+</Warning>
+
+Supported capabilities:
+
+- **`process-exec`**: Execute external processes
+- **`npm-install-package`**: Install npm packages
+- **`download-file`**: Download files from URLs
+
+### Capability Types
+
+```rust
+// From extension capabilities
+pub enum ExtensionCapability {
+    ProcessExec(ProcessExecCapability),
+    NpmInstallPackage(NpmInstallPackageCapability),
+    DownloadFile(DownloadFileCapability),
+}
+```
+
+## Building Extensions
+
+### WASM Compilation
+
+Extensions are compiled to WebAssembly:
+
+```rust
+pub fn parse_wasm_extension_version(
+    extension_id: &str,
+    wasm_bytes: &[u8]
+) -> Result<Version>
+```
+
+### API Versioning
+
+Extensions declare their API version:
+
+```wasm
+// Custom section: zed:api-version
+// Contains the API version the extension was built against
+```
+
+<Note>
+Glass checks the API version to ensure compatibility between the extension and the editor.
+</Note>
+
+## Extension Lifecycle
+
+### Loading Extensions
+
+<Steps>
+  <Step title="Discovery">
+    Glass discovers extensions in the extensions directory
+  </Step>
+  <Step title="Validation">
+    Manifest and WASM are validated
+  </Step>
+  <Step title="Initialization">
+    Extension is loaded and initialized
+  </Step>
+  <Step title="Registration">
+    Features are registered with appropriate systems
+  </Step>
+</Steps>
+
+### Extension Events
+
+```rust
+// From extension_events
+pub fn init(cx: &mut App)
+```
+
+Extensions can respond to:
+
+- Installation and uninstallation
+- Enable/disable events
+- Configuration changes
+- Project open/close
+
+## Best Practices
+
+### Development Guidelines
+
+<CardGroup cols={2}>
+  <Card title="Manifest" icon="file-lines">
+    - Use semantic versioning
+    - Declare all capabilities needed
+    - Provide clear descriptions
+    - Include repository URL
+  </Card>
+  <Card title="Code" icon="code">
+    - Handle errors gracefully
+    - Minimize WASM size
+    - Cache expensive operations
+    - Document extension API usage
+  </Card>
+</CardGroup>
+
+### Testing
+
+- Test with different project structures
+- Verify language server integration
+- Test theme in light and dark modes
+- Validate capability declarations
+
+<Tip>
+Use the extension builder to scaffold new extensions with proper structure and boilerplate.
+</Tip>
+
+## Publishing Extensions
+
+Once your extension is ready:
+
+1. Ensure all manifest fields are complete
+2. Test thoroughly in development
+3. Tag a release with proper versioning
+4. Submit to the Glass extension registry
+5. Maintain compatibility with API changes

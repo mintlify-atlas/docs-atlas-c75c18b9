@@ -1,0 +1,377 @@
+---
+title: Agent Panel
+description: Interactive AI agent panel for code generation, refactoring, and development tasks in Glass
+---
+
+The Agent Panel is Glass's primary AI interface, providing an interactive environment for complex coding tasks. Access it via `cmd-shift-a` (macOS) or `ctrl-shift-a` (Linux/Windows).
+
+## Agent Types
+
+The panel supports multiple agent implementations:
+
+<Tabs>
+  <Tab title="Native Agent">
+    ### Zed Agent (Native)
+    
+    The built-in agent with full Glass integration:
+    
+    - **Tool execution** - Edit files, run commands, search code
+    - **Context awareness** - Accesses project rules and structure
+    - **Streaming responses** - Real-time output with tool use
+    - **Multi-model support** - Works with any configured provider
+    
+    **Default model**: Claude 4.6 Sonnet
+  </Tab>
+  
+  <Tab title="Text Thread">
+    ### Text Thread Agent
+    
+    A simpler agent for conversations without tool execution:
+    
+    - **Fast responses** - No tool overhead
+    - **Manual context** - Attach files explicitly
+    - **Message editing** - Edit any message in the thread
+    - **Thread persistence** - Save and resume conversations
+    
+    Best for: Q&A, explanations, brainstorming
+  </Tab>
+  
+  <Tab title="External Agents">
+    ### External Agents (Agent Servers)
+    
+    Third-party agents via Agent Client Protocol:
+    
+    - **Claude Code** - Anthropic's official agent
+    - **Gemini CLI** - Google's agent implementation  
+    - **Codex** - OpenAI's specialized agent
+    - **Custom agents** - Your own ACP-compatible agents
+    
+    Configure via `agent_servers` in settings.
+  </Tab>
+</Tabs>
+
+## Panel Features
+
+### Thread Management
+
+<Steps>
+  <Step title="Create New Thread">
+    Click the `+` icon or use `cmd-n` to start a fresh conversation
+  </Step>
+  <Step title="View History">
+    Access previous threads via the history menu (top-left)
+  </Step>
+  <Step title="Thread Titles">
+    Threads are automatically titled based on content, or edit manually
+  </Step>
+  <Step title="Search Threads">
+    Filter thread history by content or title
+  </Step>
+</Steps>
+
+### Message Composition
+
+The message editor supports rich input:
+
+```markdown
+@file: Reference specific files
+@symbol: Reference functions/classes
+/command: Execute slash commands
+```
+
+<Tip>
+  Use `shift-enter` to add a newline. Press `enter` alone to send the message.
+</Tip>
+
+### Context Menu
+
+Right-click in the panel for quick actions:
+
+- **Copy thread** - Copy entire conversation
+- **Export as markdown** - Save conversation to file
+- **Share thread** - Generate shareable link
+- **Clear history** - Remove old threads
+
+## Tool Execution
+
+Native agents can execute tools with your approval:
+
+<CardGroup cols={2}>
+  <Card title="File Operations" icon="file-code">
+    - Read file contents
+    - Write new files
+    - Edit with unified diffs
+    - Delete files
+  </Card>
+  
+  <Card title="Terminal" icon="terminal">
+    - Run shell commands
+    - Execute scripts
+    - Install dependencies
+    - Git operations
+  </Card>
+  
+  <Card title="Code Search" icon="magnifying-glass">
+    - Project-wide search
+    - Semantic search
+    - Symbol search
+    - Regex patterns
+  </Card>
+  
+  <Card title="LSP Actions" icon="code">
+    - Go to definition
+    - Find references
+    - Get diagnostics
+    - Symbol information
+  </Card>
+</CardGroup>
+
+### Tool Permission System
+
+Configure how tools are authorized:
+
+<CodeGroup>
+```json Default (Confirm)
+{
+  "agent": {
+    "tool_permissions": {
+      "default": "confirm"
+    }
+  }
+}
+```
+
+```json Allow Specific Tools
+{
+  "agent": {
+    "tool_permissions": {
+      "default": "confirm",
+      "tools": {
+        "read_file": {
+          "default": "allow"
+        },
+        "terminal": {
+          "default": "confirm",
+          "always_deny": [
+            { "pattern": "rm\\s+-rf" }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+```json Deny Dangerous Operations
+{
+  "agent": {
+    "tool_permissions": {
+      "tools": {
+        "terminal": {
+          "always_deny": [
+            { "pattern": "rm\\s+-rf\\s+/" },
+            { "pattern": "sudo" }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+<Warning>
+  Hardcoded security rules prevent destructive operations like `rm -rf /` regardless of settings.
+</Warning>
+
+## Model Selection
+
+Change models mid-conversation:
+
+<Steps>
+  <Step title="Open Model Menu">
+    Click the model name in the panel header
+  </Step>
+  <Step title="Browse Providers">
+    Models are grouped by provider (Anthropic, OpenAI, etc.)
+  </Step>
+  <Step title="Select Model">
+    Choose a model - the next message uses it
+  </Step>
+  <Step title="Thinking Models">
+    Some models (Claude Sonnet 4.6 Thinking, o1) show reasoning steps
+  </Step>
+</Steps>
+
+### Recommended Models
+
+For different tasks:
+
+| Task | Recommended Model | Why |
+|------|-------------------|-----|
+| Code generation | Claude 4.6 Sonnet | Best code quality and tool use |
+| Fast responses | GPT-4o Mini | Quick, cost-effective |
+| Reasoning | Claude 4.6 Sonnet Thinking | Shows reasoning steps |
+| Long context | Claude 4.6 Sonnet | 200k context window |
+
+## Context Management
+
+### Automatic Context
+
+Native agents automatically include:
+
+- **Active file** - Current editor content
+- **Project structure** - Directory layout
+- **Rules files** - `.zed.md`, `.rules`, `.clinerules`
+- **Related files** - Semantically relevant code
+
+### Manual Context
+
+Add explicit context:
+
+```markdown
+@README.md can you update the installation instructions?
+
+@src/lib.rs @tests/integration.rs help me write tests
+```
+
+### Context Servers
+
+Extend context via Model Context Protocol (MCP) servers:
+
+<CodeGroup>
+```json Settings
+{
+  "context_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/project"]
+    }
+  }
+}
+```
+</CodeGroup>
+
+Context servers can provide:
+- External file systems
+- Database access
+- API documentation
+- Custom knowledge sources
+
+## Agent Configuration
+
+Customize agent behavior:
+
+<CodeGroup>
+```json Agent Settings
+{
+  "agent": {
+    "enabled": true,
+    "button": true,
+    "dock": "right",
+    "default_width": 400,
+    "default_view": "agent",
+    "notify_when_agent_waiting": "always",
+    "play_sound_when_agent_done": true,
+    "use_modifier_to_send": false,
+    "message_editor_min_lines": 3
+  }
+}
+```
+
+```json Model Parameters
+{
+  "agent": {
+    "model_parameters": [
+      {
+        "provider": "anthropic",
+        "model": "claude-4.6-sonnet",
+        "temperature": 0.7
+      }
+    ]
+  }
+}
+```
+</CodeGroup>
+
+## Slash Commands
+
+Context server prompts appear as slash commands:
+
+```markdown
+/search find all TODO comments
+/git show recent commits
+/docs search for authentication examples
+```
+
+Configure via context servers in settings.
+
+## Agent Profiles
+
+Create custom agent configurations:
+
+```json
+{
+  "agent": {
+    "default_profile": "write",
+    "profiles": {
+      "write": {
+        "default_model": {
+          "provider": "anthropic",
+          "model": "claude-4.6-sonnet"
+        }
+      },
+      "review": {
+        "default_model": {
+          "provider": "openai",
+          "model": "o1"
+        }
+      }
+    }
+  }
+}
+```
+
+Switch profiles via the profile menu in the panel.
+
+## Keyboard Shortcuts
+
+| Action | macOS | Linux/Windows |
+|--------|-------|---------------|
+| Toggle panel | `cmd-shift-a` | `ctrl-shift-a` |
+| New thread | `cmd-n` | `ctrl-n` |
+| Focus editor | `escape` | `escape` |
+| Send message | `enter` | `enter` |
+| New line | `shift-enter` | `shift-enter` |
+| History | `cmd-h` | `ctrl-h` |
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Agent not responding">
+    - Check API key is configured
+    - Verify provider authentication
+    - Check network connectivity
+    - View logs: `cmd-shift-p` → "Open Logs"
+  </Accordion>
+  
+  <Accordion title="Tool execution fails">
+    - Review tool permissions in settings
+    - Check file/directory permissions
+    - Verify terminal access
+    - Review hardcoded security rules
+  </Accordion>
+  
+  <Accordion title="Context not loading">
+    - Restart context servers
+    - Check context server logs
+    - Verify MCP server configuration
+    - Ensure files are indexed
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+- [Configure AI providers](/ai/providers)
+- [Customize settings](/ai/configuration)
+- [Learn about inline assistance](/ai/inline-assistant)

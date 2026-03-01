@@ -1,0 +1,328 @@
+---
+title: Settings
+description: Configure Glass with the settings system
+---
+
+Glass uses a JSON-based settings system that allows you to customize every aspect of the editor. Settings can be configured globally, per-project, or for specific file types.
+
+## Settings Files
+
+Glass uses multiple settings files that are merged with a specific precedence:
+
+1. **Default settings** - Built-in defaults (`assets/settings/default.json`)
+2. **User settings** - Your personal configuration (`~/.config/glass/settings.json`)
+3. **Project settings** - Project-specific settings (`.glass/settings.json` in project root)
+4. **Local settings** - Directory-specific settings (`.glass/settings.json` in subdirectories)
+
+<Note>
+  Settings from higher-precedence files override settings from lower-precedence files. Project and local settings override user settings, which override defaults.
+</Note>
+
+## Opening Settings
+
+Access settings through multiple methods:
+
+- **Command Palette:** `zed: open settings` - Opens the settings UI
+- **Command Palette:** `zed: open settings file` - Opens `settings.json` directly
+- **Command Palette:** `zed: open default settings` - View all default settings
+- **Menu:** Settings → Open Settings
+- **Keyboard:** `Cmd+,` (macOS) or `Ctrl+,` (Linux/Windows)
+
+## Settings File Format
+
+Settings are stored as JSON with comments support:
+
+```json settings.json
+{
+  "$schema": "zed://schemas/settings",
+  // Editor configuration
+  "buffer_font_size": 15,
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "One Dark"
+  },
+  // Language-specific settings
+  "languages": {
+    "TypeScript": {
+      "tab_size": 2
+    }
+  }
+}
+```
+
+<Tip>
+  The `$schema` field enables autocomplete and validation in the editor. Glass automatically provides intelligent suggestions as you type.
+</Tip>
+
+## Common Settings
+
+### Editor Settings
+
+<CodeGroup>
+```json Fonts & Appearance
+{
+  "buffer_font_family": ".ZedMono",
+  "buffer_font_size": 15,
+  "buffer_line_height": "comfortable",
+  "ui_font_size": 16,
+  "theme": "One Dark"
+}
+```
+
+```json Tabs & Indentation
+{
+  "tab_size": 4,
+  "hard_tabs": false,
+  "soft_wrap": "none",
+  "show_whitespaces": "selection",
+  "use_autoclose": true
+}
+```
+
+```json Editing Behavior
+{
+  "vim_mode": false,
+  "cursor_blink": true,
+  "show_inline_completions": true,
+  "show_completions_on_input": true,
+  "use_on_type_format": true
+}
+```
+</CodeGroup>
+
+### Workspace Settings
+
+```json settings.json
+{
+  "autosave": "on_focus_change",
+  "restore_on_startup": "last_session",
+  "confirm_quit": false,
+  "active_pane_modifiers": {
+    "border_size": 1.0,
+    "inactive_opacity": 0.95
+  }
+}
+```
+
+<ParamField path="autosave" type="string" default="off">
+  When to automatically save files:
+  - `"off"` - Never autosave
+  - `"on_focus_change"` - Save when switching files/apps
+  - `"on_window_change"` - Save when switching windows
+  - `"after_delay"` - Save after a delay (see `autosave_delay`)
+</ParamField>
+
+<ParamField path="restore_on_startup" type="string" default="last_session">
+  What to restore on startup:
+  - `"last_session"` - Restore all workspaces from last session
+  - `"last_workspace"` - Restore only the last workspace
+  - `"none"` - Start with empty workspace
+</ParamField>
+
+### Terminal Settings
+
+```json settings.json
+{
+  "terminal": {
+    "font_family": ".ZedMono",
+    "font_size": 14,
+    "line_height": "comfortable",
+    "shell": {
+      "program": "zsh",
+      "args": ["-l"]
+    },
+    "working_directory": "current_project_directory",
+    "copy_on_select": false
+  }
+}
+```
+
+## Language-Specific Settings
+
+Override settings for specific programming languages:
+
+```json settings.json
+{
+  "languages": {
+    "TypeScript": {
+      "tab_size": 2,
+      "formatter": "language_server",
+      "format_on_save": "on",
+      "code_actions_on_format": {
+        "source.organizeImports": true
+      }
+    },
+    "Python": {
+      "tab_size": 4,
+      "formatter": "language_server",
+      "format_on_save": "on"
+    },
+    "Rust": {
+      "tab_size": 4,
+      "hard_tabs": false,
+      "format_on_save": "on"
+    }
+  }
+}
+```
+
+<ParamField path="languages.<Language>.tab_size" type="number" default="4">
+  Number of spaces per indentation level
+</ParamField>
+
+<ParamField path="languages.<Language>.formatter" type="string">
+  How to format code:
+  - `"language_server"` - Use the LSP formatter
+  - `"prettier"` - Use Prettier
+  - `"auto"` - Auto-detect formatter
+</ParamField>
+
+<ParamField path="languages.<Language>.format_on_save" type="string" default="off">
+  When to format on save:
+  - `"on"` - Always format
+  - `"off"` - Never format
+  - `"language_server"` - Format using LSP only
+</ParamField>
+
+## LSP Settings
+
+Configure language servers:
+
+```json settings.json
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "check": {
+          "command": "clippy"
+        },
+        "cargo": {
+          "features": "all"
+        }
+      }
+    },
+    "typescript-language-server": {
+      "initialization_options": {
+        "preferences": {
+          "includeInlayParameterNameHints": "all"
+        }
+      }
+    }
+  }
+}
+```
+
+Each language server can have its own initialization options, which are specific to that server. Refer to the language server's documentation for available options.
+
+## Project Settings
+
+Project-specific settings are stored in `.glass/settings.json` in your project root:
+
+```json .glass/settings.json
+{
+  "project_name": "My Project",
+  "languages": {
+    "TypeScript": {
+      "tab_size": 2
+    }
+  },
+  "lsp": {
+    "typescript-language-server": {
+      "initialization_options": {
+        "preferences": {
+          "quotePreference": "single"
+        }
+      }
+    }
+  }
+}
+```
+
+<Warning>
+  Be careful with project settings in shared repositories. Settings that affect code style should be discussed with your team. Consider using EditorConfig for consistent style across editors.
+</Warning>
+
+## Settings Profiles
+
+Glass supports settings profiles for different workflows:
+
+```json settings.json
+{
+  "profiles": {
+    "presentation": {
+      "buffer_font_size": 20,
+      "ui_font_size": 18,
+      "theme": "One Light"
+    },
+    "minimal": {
+      "buffer_font_size": 13,
+      "ui_font_size": 14,
+      "vim_mode": true
+    }
+  }
+}
+```
+
+Switch between profiles using the command palette.
+
+## Platform-Specific Settings
+
+Override settings per operating system:
+
+```json settings.json
+{
+  "buffer_font_size": 15,
+  "platform_overrides": {
+    "macos": {
+      "buffer_font_size": 14
+    },
+    "linux": {
+      "buffer_font_size": 15
+    },
+    "windows": {
+      "buffer_font_size": 16
+    }
+  }
+}
+```
+
+## Settings Store
+
+The settings system is implemented in `crates/settings/` with these key components:
+
+- **SettingsStore** - Global settings state management
+- **SettingsFile** - JSON file parsing and merging
+- **Settings trait** - Type-safe settings access
+- **EditorConfig** - Support for `.editorconfig` files
+
+Settings are automatically reloaded when files change, with updates propagated to all components through the `SettingsStore::observe_global` mechanism.
+
+## Settings Location
+
+Settings files are stored in:
+
+- **Linux:** `~/.config/glass/settings.json`
+- **macOS:** `~/Library/Application Support/Glass/settings.json`
+- **Windows:** `%APPDATA%\Glass\settings.json`
+
+Project settings are in `.glass/settings.json` relative to your project root.
+
+## Validation & Schema
+
+Glass provides JSON schema validation for settings:
+
+```json settings.json
+{
+  "$schema": "zed://schemas/settings"
+}
+```
+
+The schema provides:
+- **Autocomplete** - Suggestions for valid setting names and values
+- **Validation** - Real-time error checking
+- **Documentation** - Inline descriptions for each setting
+
+<Tip>
+  Use the command palette to search for specific settings. Type `settings:` to see all available settings commands.
+</Tip>

@@ -1,0 +1,558 @@
+---
+title: Python Language Support
+description: Python support with multiple LSP servers, virtual environment detection, and test framework integration
+---
+
+Glass provides comprehensive Python support with automatic virtual environment detection, multiple LSP server options, and extensive test framework integration.
+
+## LSP Servers
+
+Glass supports multiple Python language servers:
+
+<Tabs>
+  <Tab title="Basedpyright (Default)">
+    A faster fork of Pyright with improved performance:
+    
+    - Full type checking
+    - Intelligent completions
+    - Go-to-definition and references
+    - Automatic import suggestions
+    - Inlay hints for types
+    
+    Installed automatically from npm.
+  </Tab>
+  
+  <Tab title="Pyright">
+    Microsoft's official Python language server:
+    
+    ```json
+    {
+      "languages": {
+        "Python": {
+          "language_servers": ["pyright", "..."]
+        }
+      }
+    }
+    ```
+    
+    Same features as Basedpyright, official Microsoft implementation.
+  </Tab>
+  
+  <Tab title="Ty (Experimental)">
+    A modern Python language server written in Rust:
+    
+    ```json
+    {
+      "languages": {
+        "Python": {
+          "language_servers": ["ty", "..."]
+        }
+      }
+    }
+    ```
+    
+    Features:
+    - Extremely fast
+    - Low memory usage
+    - Downloaded from [astral-sh/ty releases](https://github.com/astral-sh/ty)
+  </Tab>
+  
+  <Tab title="Ruff (Linter)">
+    Fast Python linter alongside your language server:
+    
+    Ruff is automatically enabled with Basedpyright/Pyright for:
+    - Linting (errors, style issues)
+    - Auto-formatting
+    - Import sorting
+    - Quick fixes
+    
+    No configuration needed - works out of the box.
+  </Tab>
+</Tabs>
+
+## Virtual Environment Detection
+
+Glass automatically detects and uses Python virtual environments:
+
+### Detection Methods
+
+<Tabs>
+  <Tab title="Project-local Environments">
+    Glass detects these virtual environments automatically:
+    
+    - **venv**: Standard library `python -m venv`
+    - **virtualenv**: Third-party tool
+    - **Poetry**: `poetry install` environments
+    - **Pipenv**: `pipenv install` environments
+    - **uv**: Modern Python package manager
+    - **Conda/Mamba**: Anaconda environments
+    - **Pixi**: Modern package manager
+    
+    Priority order (most specific first):
+    1. UV workspace environments
+    2. UV project environments
+    3. Poetry environments
+    4. Pipenv environments
+    5. venv/virtualenv
+    6. Conda environments
+  </Tab>
+  
+  <Tab title="Global Environments">
+    System Python installations:
+    
+    - **Pyenv**: Pyenv-managed Pythons
+    - **Homebrew**: Homebrew Python (macOS)
+    - **System**: `/usr/bin/python3`
+    - **Windows Store**: Windows Store Python
+    - **Python.org**: Official installers (macOS)
+    
+    Global environments are used only if no project-local environment is found.
+  </Tab>
+  
+  <Tab title="Custom Paths">
+    Specify a custom Python interpreter:
+    
+    1. Open the project
+    2. Cmd/Ctrl+Shift+P → "Python: Select Interpreter"
+    3. Choose from detected environments or enter a custom path
+    
+    Glass will use this interpreter for:
+    - Language server configuration
+    - Running tasks
+    - Test execution
+  </Tab>
+</Tabs>
+
+### Environment Priority
+
+For workspaces with multiple packages:
+
+```
+project/
+├── .venv              # Root environment
+├── backend/
+│   └── .venv          # Backend environment (higher priority)
+└── frontend/
+    └── node_modules/
+```
+
+Glass prefers the environment closest to the current file:
+1. Same directory as file
+2. Parent directories (closest first)
+3. Workspace root
+
+<Note>
+Glass uses [Python Environment Tools (PET)](https://github.com/microsoft/python-environment-tools) for environment detection, the same library used by VS Code.
+</Note>
+
+## Features
+
+### Intelligent Completions
+
+<Tabs>
+  <Tab title="Methods & Functions">
+    ```python
+    data = [1, 2, 3]
+    data.| # Shows list methods with signatures
+    ```
+    
+    Completions include:
+    - Method signatures with parameter types
+    - Return type annotations
+    - Docstrings
+  </Tab>
+  
+  <Tab title="Import Suggestions">
+    ```python
+    from pathlib import |
+    ```
+    
+    Auto-completes:
+    - Available exports
+    - Type-only imports
+    - Sub-modules
+    
+    Glass sorts completions by visibility:
+    1. Public members (no underscore)
+    2. Protected members (`_name`)
+    3. Private members (`__name`)
+    4. Dunder methods (`__init__`, etc.)
+  </Tab>
+  
+  <Tab title="Type Hints">
+    ```python
+    def process(data: list[str]) -> dict[str, int]:
+        result = {}  # Glass infers type: dict[str, int]
+        for item in data:  # item inferred as str
+            result[item] = len(item)
+        return result
+    ```
+    
+    Hover over variables to see inferred types.
+  </Tab>
+</Tabs>
+
+### Custom Completion Sorting
+
+Glass customizes Pyright's completion order:
+
+```python
+class MyClass:
+    public_field: str         # Priority 0 (public)
+    _protected_field: int     # Priority 1 (protected)
+    __private_field: bool     # Priority 2 (private)
+    __init__(self):           # Priority 3 (dunder)
+        pass
+```
+
+Within each visibility level, items are sorted by kind:
+1. Enum members
+2. Fields
+3. Properties
+4. Variables
+5. Constants
+6. Methods/Functions
+7. Classes
+8. Modules
+
+## Test Framework Integration
+
+Glass provides built-in support for Python test frameworks:
+
+### Test Runner Selection
+
+Configure your preferred test runner:
+
+```json
+{
+  "languages": {
+    "Python": {
+      "tasks": {
+        "variables": {
+          "TEST_RUNNER": "pytest"  // or "unittest"
+        }
+      }
+    }
+  }
+}
+```
+
+### pytest (Default)
+
+<Tabs>
+  <Tab title="File Tests">
+    Run all tests in a file:
+    
+    ```bash
+    python3 -m pytest test_example.py
+    ```
+    
+    Glass automatically uses the active virtual environment's Python.
+  </Tab>
+  
+  <Tab title="Class Tests">
+    ```python
+    class TestExample:  # ← Click to run all tests in class
+        def test_one(self):
+            assert True
+        
+        def test_two(self):
+            assert True
+    ```
+    
+    Command:
+    ```bash
+    python3 -m pytest test_example.py::TestExample
+    ```
+  </Tab>
+  
+  <Tab title="Single Test">
+    ```python
+    def test_specific():  # ← Click to run this test
+        assert 2 + 2 == 4
+    ```
+    
+    Command:
+    ```bash
+    python3 -m pytest test_example.py::test_specific
+    ```
+  </Tab>
+</Tabs>
+
+### unittest (Standard Library)
+
+<Tabs>
+  <Tab title="File Tests">
+    ```bash
+    python3 -m unittest tests/test_example.py
+    ```
+  </Tab>
+  
+  <Tab title="Class Tests">
+    ```python
+    class TestCalculator(unittest.TestCase):  # ← Click to run
+        def test_add(self):
+            self.assertEqual(2 + 2, 4)
+    ```
+    
+    Command:
+    ```bash
+    python3 -m unittest tests.test_example.TestCalculator
+    ```
+  </Tab>
+  
+  <Tab title="Single Test">
+    ```python
+    def test_subtract(self):  # ← Click to run
+        self.assertEqual(5 - 3, 2)
+    ```
+    
+    Command:
+    ```bash
+    python3 -m unittest tests.test_example.TestCalculator.test_subtract
+    ```
+  </Tab>
+</Tabs>
+
+### Module Execution
+
+Run Python files as modules:
+
+```python
+# mypackage/cli.py
+if __name__ == "__main__":
+    main()
+```
+
+Task: **Run module 'mypackage.cli'**
+```bash
+python3 -m mypackage.cli
+```
+
+Glass automatically converts file paths to module names:
+- `src/mypackage/cli.py` → `src.mypackage.cli`
+- `mypackage/cli.py` → `mypackage.cli`
+
+## Task Variables
+
+| Variable | Description | Example |
+|----------|-------------|----------|
+| `PYTHON_ACTIVE_ZED_TOOLCHAIN` | Active Python interpreter | `/path/to/.venv/bin/python3` |
+| `PYTHON_TEST_TARGET` | Test target (pytest or unittest format) | `test_file.py::TestClass::test_method` |
+| `PYTHON_MODULE_NAME` | Module name from file path | `mypackage.cli` |
+
+## Available Tasks
+
+<Tabs>
+  <Tab title="Execution">
+    - **Execute selection**: Run selected code
+    - **Run file**: Execute entire Python file
+    - **Run module**: Run file as module with `-m`
+  </Tab>
+  
+  <Tab title="Testing">
+    Based on configured test runner:
+    
+    **pytest**:
+    - Run file tests
+    - Run class tests
+    - Run specific test
+    
+    **unittest**:
+    - Run file tests
+    - Run TestCase class
+    - Run specific test method
+  </Tab>
+</Tabs>
+
+## Configuration
+
+### Language Server Configuration
+
+<Tabs>
+  <Tab title="Pyright/Basedpyright">
+    ```json
+    {
+      "lsp": {
+        "pyright": {
+          "settings": {
+            "python": {
+              "analysis": {
+                "typeCheckingMode": "strict",
+                "autoImportCompletions": true,
+                "diagnosticMode": "workspace"
+              }
+            }
+          }
+        }
+      }
+    }
+    ```
+    
+    Type checking modes:
+    - `off`: No type checking
+    - `basic`: Basic type checking (default)
+    - `strict`: Strict type checking
+  </Tab>
+  
+  <Tab title="Virtual Environment">
+    Glass automatically configures the virtual environment:
+    
+    ```json
+    // Sent to language server automatically
+    {
+      "venvPath": ".",
+      "venv": ".venv",
+      "python": {
+        "pythonPath": "/path/to/.venv/bin/python3"
+      }
+    }
+    ```
+    
+    You can override manually:
+    ```json
+    {
+      "lsp": {
+        "pyright": {
+          "settings": {
+            "python": {
+              "pythonPath": "/custom/path/to/python"
+            }
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Workspace Detection
+
+Glass detects Python projects by finding `pyproject.toml`:
+
+```toml
+[tool.poetry]
+name = "myproject"
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+```
+
+This helps Glass:
+- Find the project root
+- Detect package structure
+- Configure relative imports
+
+## Conda/Mamba Support
+
+For Conda environments:
+
+<Tabs>
+  <Tab title="Activation">
+    Configure Conda manager preference:
+    
+    ```json
+    {
+      "terminal": {
+        "detect_venv": {
+          "on": {
+            "conda_manager": "auto"  // or "conda", "mamba", "micromamba"
+          }
+        }
+      }
+    }
+    ```
+    
+    Glass will activate Conda environments in integrated terminals.
+  </Tab>
+  
+  <Tab title="Environment Selection">
+    Conda environments from:
+    - `CONDA_PREFIX` environment variable
+    - Conda installation directory
+    - Miniconda/Anaconda directories
+    
+    Environments appear in the toolchain picker with their names and Python versions.
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<Warning>
+If the language server can't find imports, ensure your virtual environment includes all dependencies:
+
+```bash
+# Recreate environment
+rm -rf .venv
+python3 -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
+```
+
+Then restart Glass or run "Python: Restart Language Server".
+</Warning>
+
+<Tabs>
+  <Tab title="Wrong Python Version">
+    Check detected Python:
+    
+    1. Cmd/Ctrl+Shift+P → "Python: Show Detected Environments"
+    2. Verify the correct environment is selected
+    3. If not, use "Python: Select Interpreter"
+    
+    Or check manually:
+    ```bash
+    which python3
+    python3 --version
+    ```
+  </Tab>
+  
+  <Tab title="Import Errors">
+    For custom import paths, add to `pyproject.toml` or create a `.pth` file:
+    
+    ```toml
+    [tool.pyright]
+    extraPaths = ["src", "lib"]
+    ```
+    
+    Or configure in Glass:
+    ```json
+    {
+      "lsp": {
+        "pyright": {
+          "settings": {
+            "python": {
+              "analysis": {
+                "extraPaths": ["src", "lib"]
+              }
+            }
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Tests Not Found">
+    Ensure test files follow naming conventions:
+    
+    - pytest: `test_*.py` or `*_test.py`
+    - unittest: `test_*.py` in a package with `__init__.py`
+    
+    Check test discovery:
+    ```bash
+    # pytest
+    pytest --collect-only
+    
+    # unittest
+    python -m unittest discover
+    ```
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+- Configure [Pyright type checking](https://github.com/microsoft/pyright/blob/main/docs/configuration.md)
+- Learn about [Poetry integration](https://python-poetry.org/)
+- Explore [Ruff configuration](https://docs.astral.sh/ruff/)

@@ -1,0 +1,527 @@
+---
+title: TypeScript & JavaScript Support
+description: Full TypeScript, JavaScript, and JSX/TSX support with multiple LSP servers and test framework integration
+---
+
+Glass provides comprehensive TypeScript and JavaScript support through language server integration, offering intelligent completions, type checking, and extensive test framework automation.
+
+## LSP Servers
+
+Glass supports multiple TypeScript language servers:
+
+<Tabs>
+  <Tab title="typescript-language-server (Default)">
+    The default language server, providing:
+    
+    - TypeScript and JavaScript support
+    - JSX/TSX with React support
+    - Automatic TypeScript version detection
+    - Integration with project's `node_modules/typescript`
+    
+    Installed automatically from npm:
+    - Package: `typescript-language-server`
+    - Requires: `typescript` package
+  </Tab>
+  
+  <Tab title="vtsls (Alternative)">
+    A faster alternative TypeScript language server:
+    
+    ```json
+    {
+      "languages": {
+        "TypeScript": {
+          "language_servers": ["vtsls", "..."]
+        }
+      }
+    }
+    ```
+    
+    Features:
+    - Better performance on large projects
+    - Same protocol as typescript-language-server
+    - Drop-in replacement
+  </Tab>
+</Tabs>
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic (Recommended)">
+    Glass automatically installs the language server:
+    
+    1. Downloads latest versions of:
+       - `typescript-language-server`
+       - `typescript`
+    2. Installs to: `~/.local/share/zed/languages/typescript-language-server/`
+    3. Uses Node.js runtime from Glass's bundled node or system node
+    
+    No manual setup required.
+  </Tab>
+  
+  <Tab title="Project-local Server">
+    Use your project's TypeScript installation:
+    
+    ```bash
+    npm install --save-dev typescript-language-server typescript
+    # or
+    yarn add -D typescript-language-server typescript
+    ```
+    
+    Glass will detect and use the project-local installation automatically.
+  </Tab>
+  
+  <Tab title="Global Installation">
+    Install globally with npm:
+    
+    ```bash
+    npm install -g typescript-language-server typescript
+    ```
+    
+    Glass detects globally installed servers in your PATH.
+  </Tab>
+</Tabs>
+
+## Features
+
+### Intelligent Completions
+
+Glass provides rich completions with syntax highlighting:
+
+<Tabs>
+  <Tab title="Methods & Functions">
+    ```typescript
+    const arr = [1, 2, 3];
+    arr.| // Shows methods with types
+    ```
+    
+    Completion displays:
+    - `map (callbackfn: ...) => U[]`
+    - `filter (predicate: ...) => T[]`
+    - `reduce (callbackfn: ...) => U`
+    
+    With proper syntax highlighting for functions and types.
+  </Tab>
+  
+  <Tab title="Object Properties">
+    ```typescript
+    interface User {
+      name: string;
+      email: string;
+    }
+    
+    const user: User = {
+      | // Suggests name and email
+    };
+    ```
+    
+    Shows property names with their types.
+  </Tab>
+  
+  <Tab title="Imports">
+    ```typescript
+    import { | } from 'react';
+    ```
+    
+    Auto-completes available exports with:
+    - Named exports
+    - Default exports
+    - Type-only imports
+  </Tab>
+</Tabs>
+
+### TypeScript SDK Detection
+
+Glass automatically detects TypeScript installations:
+
+<Tabs>
+  <Tab title="Yarn 2+ (Berry)">
+    Detects Yarn's SDK setup:
+    
+    ```bash
+    yarn dlx @yarnpkg/sdks vscode
+    ```
+    
+    Glass finds TypeScript at: `.yarn/sdks/typescript/lib`
+  </Tab>
+  
+  <Tab title="node_modules">
+    Uses project's TypeScript:
+    
+    ```json
+    {
+      "dependencies": {
+        "typescript": "^5.0.0"
+      }
+    }
+    ```
+    
+    Glass finds: `node_modules/typescript/lib`
+  </Tab>
+</Tabs>
+
+### Inlay Hints
+
+TypeScript language server provides inlay hints for:
+
+```typescript
+function greet(name: string, age: number) {
+  return `Hello ${name}, you are ${age} years old`;
+}
+
+greet("Alice", 30);
+//    ↑name   ↑age  // Parameter name hints
+
+const result = getValue();
+//    ↑: string      // Type hints
+```
+
+Configuration:
+```json
+{
+  "lsp": {
+    "typescript-language-server": {
+      "initialization_options": {
+        "preferences": {
+          "includeInlayParameterNameHints": "all",
+          "includeInlayVariableTypeHints": true,
+          "includeInlayFunctionLikeReturnTypeHints": true
+        }
+      }
+    }
+  }
+}
+```
+
+## Test Framework Integration
+
+Glass automatically detects and provides tasks for popular test frameworks:
+
+### Jest
+
+<Tabs>
+  <Tab title="File Tests">
+    Run all tests in a file:
+    
+    ```bash
+    npm exec -- jest --runInBand file.test.ts
+    ```
+    
+    Automatically uses the package manager detected (npm/yarn/pnpm).
+  </Tab>
+  
+  <Tab title="Specific Test">
+    Run a single test:
+    
+    ```typescript
+    describe('MyComponent', () => {
+      it('renders correctly', () => {  // ← Click to run this test
+        // ...
+      });
+    });
+    ```
+    
+    Command:
+    ```bash
+    npm exec -- jest --runInBand --testNamePattern "renders correctly" file.test.ts
+    ```
+  </Tab>
+</Tabs>
+
+### Vitest
+
+<Tabs>
+  <Tab title="File Tests">
+    ```bash
+    npm exec -- vitest run --no-file-parallelism file.test.ts
+    ```
+  </Tab>
+  
+  <Tab title="Specific Test">
+    ```typescript
+    test('should work', () => {  // ← Click to run
+      expect(true).toBe(true);
+    });
+    ```
+    
+    Command:
+    ```bash
+    npm exec -- vitest run --no-file-parallelism --testNamePattern "should work" file.test.ts
+    ```
+  </Tab>
+</Tabs>
+
+### Mocha
+
+```bash
+# File tests
+npm exec -- mocha file.test.js
+
+# Specific test
+npm exec -- mocha --grep "test name" file.test.js
+```
+
+### Jasmine
+
+```bash
+# File tests
+npm exec -- jasmine file.test.js
+
+# Specific test
+npm exec -- jasmine --filter="test name" file.test.js
+```
+
+### Bun Test
+
+For projects using Bun:
+
+```bash
+# File tests
+bun test file.test.ts
+
+# Specific test
+bun test --test-name-pattern "test name" file.test.ts
+```
+
+### Node.js Built-in Test Runner
+
+For Node.js 18+ with native test runner:
+
+```bash
+# File tests
+node --test file.test.js
+
+# Specific test
+node --test --test-name-pattern "test name" file.test.js
+```
+
+## Package Manager Detection
+
+Glass automatically detects your package manager:
+
+<Tabs>
+  <Tab title="Priority Order">
+    1. **package.json `packageManager` field**:
+       ```json
+       {
+         "packageManager": "pnpm@8.0.0"
+       }
+       ```
+    
+    2. **Lock files**:
+       - `pnpm-lock.yaml` → pnpm
+       - `yarn.lock` → yarn
+       - Default to npm
+  </Tab>
+  
+  <Tab title="Usage in Tasks">
+    All test tasks use the detected package manager:
+    
+    ```bash
+    # With pnpm:
+    pnpm exec -- jest ...
+    
+    # With yarn:
+    yarn exec -- jest ...
+    
+    # With npm:
+    npm exec -- jest ...
+    ```
+    
+    Variable: `$ZED_CUSTOM_TYPESCRIPT_RUNNER`
+  </Tab>
+</Tabs>
+
+## Package.json Scripts
+
+Glass automatically creates tasks from your `package.json` scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "test": "jest",
+    "lint": "eslint ."
+  }
+}
+```
+
+All scripts appear in the task picker:
+- "package.json > dev"
+- "package.json > build"
+- "package.json > test"
+- "package.json > lint"
+
+<Tip>
+For monorepos with multiple `package.json` files, Glass disambiguates by showing the parent directory: `"frontend/package.json > dev"`
+</Tip>
+
+## Task Variables
+
+| Variable | Description | Example |
+|----------|-------------|----------|
+| `TYPESCRIPT_RUNNER` | Detected package manager | `pnpm` |
+| `TYPESCRIPT_JEST_TEST_NAME` | Sanitized test name for Jest | `my\\_test` |
+| `TYPESCRIPT_VITEST_TEST_NAME` | Sanitized test name for Vitest | `my\\_test` |
+| `TYPESCRIPT_BUN_TEST_NAME` | Sanitized test name for Bun | `my\\_test` |
+| `TYPESCRIPT_JEST_PACKAGE_PATH` | Path to package with Jest | `/project/packages/app` |
+| `TYPESCRIPT_MOCHA_PACKAGE_PATH` | Path to package with Mocha | `/project` |
+| `TYPESCRIPT_VITEST_PACKAGE_PATH` | Path to package with Vitest | `/project` |
+
+### Test Name Sanitization
+
+Test names with special characters are automatically escaped:
+
+```typescript
+// Test with parameters
+test('handles %s and %d', () => {});
+// Becomes: handles (.+?) and (.+?)
+
+test('validates $param', () => {});
+// Becomes: validates (.+?)
+```
+
+This regex matching allows Jest/Vitest to find parameterized tests.
+
+## Configuration
+
+### Workspace Configuration
+
+```json
+{
+  "lsp": {
+    "typescript-language-server": {
+      "initialization_options": {
+        "preferences": {
+          "includeInlayParameterNameHints": "all",
+          "includeInlayFunctionLikeReturnTypeHints": true,
+          "includeInlayVariableTypeHints": true
+        },
+        "tsserver": {
+          "path": ".yarn/sdks/typescript/lib"  // Custom TypeScript path
+        }
+      }
+    }
+  }
+}
+```
+
+### Code Actions
+
+Glass supports these TypeScript code actions:
+
+- `quickfix`: Quick fixes for errors
+- `refactor`: Extract function, constant, etc.
+- `refactor.extract`: Specific extraction refactorings
+- `source`: Organize imports, remove unused imports
+
+### Complete Function Calls
+
+Enable automatic parameter completion:
+
+```json
+{
+  "lsp": {
+    "typescript-language-server": {
+      "settings": {
+        "completions": {
+          "completeFunctionCalls": true
+        }
+      }
+    }
+  }
+}
+```
+
+When enabled:
+```typescript
+console.log|  // Completes to: console.log(cursor)
+array.map|    // Completes to: array.map(cursor => )
+```
+
+## File Associations
+
+Glass maps these language IDs:
+
+| Glass Language | LSP Language ID |
+|----------------|----------------|
+| TypeScript | `typescript` |
+| JavaScript | `javascript` |
+| TSX | `typescriptreact` |
+
+## Troubleshooting
+
+<Warning>
+For monorepos, ensure your `tsconfig.json` references are properly set up:
+
+```json
+{
+  "references": [
+    { "path": "./packages/app" },
+    { "path": "./packages/lib" }
+  ]
+}
+```
+
+This allows the TypeScript language server to understand your project structure.
+</Warning>
+
+<Tabs>
+  <Tab title="Language Server Not Starting">
+    Check Node.js version:
+    
+    ```bash
+    node --version
+    # Should be v16 or higher
+    ```
+    
+    Verify installation:
+    ```bash
+    ls ~/.local/share/zed/languages/typescript-language-server/node_modules
+    ```
+    
+    Force reinstall:
+    - Remove the directory above
+    - Restart Glass
+  </Tab>
+  
+  <Tab title="Wrong TypeScript Version">
+    Check which TypeScript is being used:
+    
+    1. Open a TypeScript file
+    2. Run "TypeScript: Select TypeScript Version"
+    3. Choose workspace version
+    
+    Or configure explicitly:
+    ```json
+    {
+      "lsp": {
+        "typescript-language-server": {
+          "initialization_options": {
+            "tsserver": {
+              "path": "node_modules/typescript/lib"
+            }
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Test Tasks Not Appearing">
+    Ensure your test framework is installed:
+    
+    ```bash
+    # Check package.json
+    cat package.json | grep -E "jest|vitest|mocha"
+    ```
+    
+    Glass scans all `package.json` files in your project tree, looking for test frameworks in dependencies or devDependencies.
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+- Configure [ESLint integration](/languages/typescript#eslint)
+- Set up [Tailwind CSS support](/languages/typescript#tailwind)
+- Learn about [monorepo support](/features/projects#monorepos)

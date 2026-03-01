@@ -1,0 +1,301 @@
+---
+title: Collaboration
+description: Real-time multiplayer collaboration features for seamless team coding
+---
+
+## Overview
+
+Glass provides built-in multiplayer collaboration capabilities, allowing teams to work together in real-time on the same codebase. The collaboration system is built on a robust client-server architecture with conflict-free editing and awareness features.
+
+## User System
+
+### User Representation
+
+```rust
+// From crates/client/src/user.rs
+pub struct User {
+    pub id: UserId,
+    pub github_login: SharedString,
+    pub avatar_uri: SharedUri,
+    pub name: Option<String>,
+}
+```
+
+Each user in a collaboration session is identified by:
+
+- **User ID**: Unique identifier for the user
+- **GitHub Login**: GitHub username for authentication
+- **Avatar**: Profile picture URI
+- **Display Name**: Optional friendly name
+
+### Collaborator Information
+
+```rust
+pub struct Collaborator {
+    pub peer_id: proto::PeerId,
+    pub replica_id: ReplicaId,
+    pub user_id: UserId,
+    pub is_host: bool,
+    pub committer_name: Option<String>,
+    pub committer_email: Option<String>,
+}
+```
+
+Active collaborators have additional metadata:
+
+<CardGroup cols={2}>
+  <Card title="Network Identity" icon="network-wired">
+    - Peer ID for network communication
+    - Replica ID for conflict-free editing
+  </Card>
+  <Card title="Git Integration" icon="code-branch">
+    - Committer name and email
+    - Host status for session ownership
+  </Card>
+</CardGroup>
+
+## Contact Management
+
+### Contact System
+
+Manage your professional network within Glass:
+
+```rust
+pub struct Contact {
+    pub user: Arc<User>,
+    pub online: bool,
+    pub busy: bool,
+}
+```
+
+### Contact Request Flow
+
+<Steps>
+  <Step title="Send Request">
+    Send a contact request to another Glass user
+  </Step>
+  <Step title="Request Status">
+    Track request status: `None`, `RequestSent`, `RequestReceived`, or `RequestAccepted`
+  </Step>
+  <Step title="Accept or Decline">
+    Recipient can accept or decline the contact request
+  </Step>
+  <Step title="Collaboration Ready">
+    Once accepted, users can collaborate and see each other's online status
+  </Step>
+</Steps>
+
+### Contact Events
+
+```rust
+pub enum ContactEventKind {
+    Requested,
+    Accepted,
+    Cancelled,
+}
+```
+
+The system emits events for:
+
+- New contact requests
+- Accepted contact requests
+- Cancelled requests
+
+## Real-Time Collaboration
+
+### Participant Tracking
+
+<Tabs>
+  <Tab title="User Store">
+    The `UserStore` maintains:
+    - All users by ID and GitHub login
+    - Participant indices for each user
+    - Online/offline status
+    - Busy status indicators
+  </Tab>
+  <Tab title="Presence">
+    Real-time awareness of:
+    - Who is currently online
+    - Current activity status (busy/available)
+    - Active collaboration sessions
+  </Tab>
+</Tabs>
+
+### Cursor and Selection Sharing
+
+See collaborators' cursors and selections in real-time:
+
+- Each collaborator has a unique color
+- Cursor positions update as collaborators type
+- Selection ranges are highlighted
+- Collaborator names appear next to cursors
+
+<Note>
+Collaborator cursor display can be controlled with the `DisplayCursorNames` action in the editor.
+</Note>
+
+## Project Sharing
+
+### Project Collaboration
+
+```rust
+pub struct ProjectId(pub u64);
+
+pub struct ParticipantIndex(pub u32);
+```
+
+Share entire projects with collaborators:
+
+- **Host Controls**: Project host manages permissions
+- **Participant Indices**: Unique index for each participant
+- **Project Synchronization**: Files and changes sync automatically
+
+### Shared Editing
+
+The collaboration system provides:
+
+- **Conflict-Free Editing**: Operational transformation ensures edits don't conflict
+- **Replica IDs**: Each editor instance has a unique replica ID for tracking changes
+- **Automatic Merging**: Changes from multiple users merge seamlessly
+
+## Network Architecture
+
+### Client-Server Communication
+
+Glass uses a client-server architecture:
+
+<CardGroup cols={2}>
+  <Card title="Client" icon="laptop">
+    - Manages local editor state
+    - Sends operations to server
+    - Receives and applies remote operations
+    - Handles presence updates
+  </Card>
+  <Card title="Server" icon="server">
+    - Routes operations between clients
+    - Maintains authoritative state
+    - Manages user authentication
+    - Tracks active sessions
+  </Card>
+</CardGroup>
+
+### Protocol
+
+Communication uses the `proto` protocol:
+
+```rust
+// Network peer identification
+pub peer_id: proto::PeerId,
+
+// User data requests
+rpc::proto::UsersResponse
+```
+
+## User Management
+
+### User Store Events
+
+```rust
+pub enum Event {
+    Contact {
+        user: Arc<User>,
+        kind: ContactEventKind,
+    },
+    ShowContacts,
+    ParticipantIndicesChanged,
+    PrivateUserInfoUpdated,
+    PlanUpdated,
+}
+```
+
+The user store emits events for:
+
+- Contact-related changes
+- Participant changes in active sessions
+- User profile updates
+- Subscription plan changes
+
+### Organization Support
+
+```rust
+pub current_organization: Option<Arc<Organization>>,
+pub organizations: Vec<Arc<Organization>>,
+pub plans_by_organization: HashMap<OrganizationId, Plan>,
+```
+
+Support for team organizations:
+
+- Organization membership tracking
+- Organization-specific plans
+- Team-wide collaboration features
+
+## Privacy and Permissions
+
+### Access Control
+
+<Warning>
+Only users you've accepted as contacts can see your online status and request to join your projects.
+</Warning>
+
+Privacy features:
+
+- **Contact-Based**: Only contacts can collaborate
+- **Invitation System**: Explicit invitations required for project access
+- **Host Controls**: Project host can remove participants
+
+### Status Management
+
+Control your availability:
+
+- **Online Status**: Automatically tracked when app is active
+- **Busy Status**: Set busy to indicate focus time
+- **Offline Mode**: Work without broadcasting presence
+
+## Best Practices
+
+### Effective Collaboration
+
+<Steps>
+  <Step title="Add Contacts">
+    Build your network by adding trusted collaborators as contacts
+  </Step>
+  <Step title="Share Projects">
+    Share projects with specific collaborators when you need real-time help
+  </Step>
+  <Step title="Communicate">
+    Use cursor positions and selections to show what you're working on
+  </Step>
+  <Step title="Manage Presence">
+    Set busy status when you need focused time without interruptions
+  </Step>
+</Steps>
+
+### Performance Considerations
+
+- Collaboration works best with stable internet connections
+- Large files may have slight latency in synchronization
+- The system automatically handles network interruptions and reconnections
+
+<Tip>
+For the best collaboration experience, ensure all participants are using recent versions of Glass.
+</Tip>
+
+## Integration with Features
+
+### Collaborative Editing
+
+Collaboration integrates with core editor features:
+
+- **Multi-Cursor Awareness**: See all collaborators' cursors
+- **Selection Sharing**: View what others have selected
+- **Git Integration**: Committer information tracked per user
+- **Language Server**: Shared diagnostics and code actions
+
+### Future Enhancements
+
+The collaboration system is designed to support:
+
+- Voice and video integration
+- Shared terminal sessions
+- Collaborative debugging
+- Team-wide extension sharing

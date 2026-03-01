@@ -1,0 +1,387 @@
+---
+title: Rust Language Support
+description: Comprehensive Rust support with rust-analyzer, Cargo integration, and semantic highlighting
+---
+
+Glass provides first-class Rust support through rust-analyzer integration, offering advanced IDE features, Cargo task automation, and semantic token highlighting.
+
+## LSP Server: rust-analyzer
+
+Glass uses [rust-analyzer](https://rust-analyzer.github.io/) as the language server for Rust.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    Glass automatically downloads and installs rust-analyzer if not found:
+    
+    - Detects your system architecture and libc type (GNU/musl on Linux)
+    - Downloads from the [rust-lang/rust-analyzer GitHub releases](https://github.com/rust-lang/rust-analyzer/releases)
+    - Verifies SHA-256 checksums for security
+    - Manages multiple versions in `~/.local/share/zed/languages/rust-analyzer/`
+    
+    The adapter will automatically use the latest compatible version.
+  </Tab>
+  
+  <Tab title="System Installation">
+    If you have rust-analyzer installed via rustup or your package manager:
+    
+    ```bash
+    # Via rustup (recommended)
+    rustup component add rust-analyzer
+    
+    # Via cargo
+    cargo install rust-analyzer
+    ```
+    
+    Glass will detect and use your system installation automatically. The adapter tests the binary with `rust-analyzer --help` to ensure it works correctly.
+  </Tab>
+</Tabs>
+
+<Note>
+On Linux, Glass automatically detects whether you're using GNU libc or musl and downloads the appropriate binary.
+</Note>
+
+## Features
+
+### Intelligent Completions
+
+rust-analyzer provides context-aware completions with:
+
+- **Full signatures**: Function and method signatures with parameter types
+- **Snippets**: Complete function bodies with placeholders
+- **Import suggestions**: Automatic import path suggestions
+- **Trait completions**: Methods from implemented traits
+
+<Tabs>
+  <Tab title="Function Completion">
+    ```rust
+    fn example(value: String) {
+        value.to_| // Completes to to_uppercase() with full signature
+    }
+    ```
+    
+    Glass displays: `to_uppercase() -> String`
+  </Tab>
+  
+  <Tab title="Struct Field Completion">
+    ```rust
+    struct Point { x: f64, y: f64 }
+    
+    let p = Point {
+        x: 1.0,
+        y| // Suggests y with type information
+    };
+    ```
+    
+    Completion shows: `y: f64`
+  </Tab>
+  
+  <Tab title="Snippet Completion">
+    ```rust
+    impl MyTrait for MyStruct {
+        fn method| // Expands to full method signature
+    }
+    ```
+    
+    Expands to:
+    ```rust
+    fn method(&self, param: Type) -> ReturnType {
+        todo!()
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Semantic Highlighting
+
+Rust-analyzer provides semantic token information for precise syntax highlighting:
+
+```rust
+// Distinguishes between:
+struct Type;        // Type (blue)
+let variable = 1;   // Variable (white)
+const CONSTANT: i32 = 42;  // Constant (purple)
+
+fn function() {     // Function (yellow)
+    macro_name!();  // Macro (cyan)
+}
+```
+
+Semantic rules are defined in `crates/languages/src/rust/semantic_token_rules.json`.
+
+### Diagnostics
+
+Glass displays diagnostics from both rust-analyzer and cargo:
+
+<Tabs>
+  <Tab title="Compiler Errors">
+    ```rust
+    fn example() {
+        let x = "hello";
+        x.push('!');  // Error: no method named `push` found
+    }
+    ```
+    
+    Diagnostics include:
+    - Error message with help text
+    - Related information (like trait imports needed)
+    - Quick fixes (code actions)
+  </Tab>
+  
+  <Tab title="Cargo Check">
+    Real-time diagnostics from `cargo check`:
+    
+    - Runs in the background
+    - Shows errors across the entire workspace
+    - Progress indicator: `rust-analyzer/flycheck`
+    
+    Glass processes cargo diagnostics with the source name `cargo`.
+  </Tab>
+</Tabs>
+
+<Warning>
+Glass processes diagnostics to clean up rust-analyzer's markdown formatting (removing trailing newlines in code blocks).
+</Warning>
+
+## Cargo Integration
+
+Glass provides comprehensive Cargo task automation:
+
+### Available Tasks
+
+<Tabs>
+  <Tab title="Check & Build">
+    - **Check (package)**: `cargo check -p $RUST_PACKAGE`
+    - **Check all targets**: `cargo check --workspace --all-targets`
+    - **Build**: `cargo build`
+    - **Clean**: `cargo clean`
+    
+    Tasks use the package containing the current file.
+  </Tab>
+  
+  <Tab title="Testing">
+    - **Test specific test**: `cargo test -p $RUST_PACKAGE -- $RUST_TEST_NAME`
+    - **Test module**: `cargo test -p $RUST_PACKAGE -- $RUST_TEST_FRAGMENT`
+    - **Doc test**: `cargo test --doc -p $RUST_PACKAGE -- $RUST_DOC_TEST_NAME`
+    - **Test package**: `cargo test -p $RUST_PACKAGE`
+    
+    Glass automatically detects test names and modules from your code.
+  </Tab>
+  
+  <Tab title="Running">
+    - **Run bin/example**: `cargo run -p $RUST_PACKAGE --$RUST_BIN_KIND $RUST_BIN_NAME`
+    - **Run default**: `cargo run`
+    
+    Automatically includes required features from `Cargo.toml`:
+    ```toml
+    [[bin]]
+    name = "my-bin"
+    required-features = ["feature-name"]
+    ```
+    
+    Task includes: `--features feature-name`
+  </Tab>
+</Tabs>
+
+### Task Variables
+
+Glass extracts these variables from your Rust workspace:
+
+| Variable | Description | Source |
+|----------|-------------|--------|
+| `RUST_PACKAGE` | Package name | `cargo metadata` |
+| `RUST_BIN_NAME` | Binary target name | `Cargo.toml` targets |
+| `RUST_BIN_KIND` | `bin` or `example` | Target kind |
+| `RUST_BIN_REQUIRED_FEATURES_FLAG` | `--features` or empty | From manifest |
+| `RUST_BIN_REQUIRED_FEATURES` | Comma-separated features | From manifest |
+| `RUST_TEST_NAME` | Test function name | From symbol |
+| `RUST_TEST_FRAGMENT` | Module test path | From file structure |
+| `RUST_MANIFEST_DIRNAME` | Directory with `Cargo.toml` | Workspace detection |
+
+### Custom Target Directory
+
+Configure a custom target directory in language settings:
+
+```json
+{
+  "languages": {
+    "Rust": {
+      "tasks": {
+        "variables": {
+          "RUST_TARGET_DIR": "./target/custom"
+        }
+      }
+    }
+  }
+}
+```
+
+All cargo commands will use `--target-dir ./target/custom`.
+
+## Configuration
+
+### Dynamic Schema
+
+rust-analyzer's configuration schema is dynamically loaded by running:
+
+```bash
+rust-analyzer --print-config-schema
+```
+
+Glass converts the schema to a nested JSON format for settings validation.
+
+### Example Configuration
+
+```json
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "check": {
+          "command": "clippy",
+          "extraArgs": ["--all-targets"]
+        },
+        "cargo": {
+          "features": "all",
+          "targetDir": true
+        },
+        "procMacro": {
+          "enable": true
+        }
+      }
+    }
+  }
+}
+```
+
+### LSP Tasks (Experimental)
+
+Enable rust-analyzer's runnable tasks:
+
+```json
+{
+  "lsp": {
+    "rust-analyzer": {
+      "enable_lsp_tasks": true
+    }
+  }
+}
+```
+
+This allows rust-analyzer to provide its own test/run tasks with:
+```json
+"experimental": {
+  "runnables": {
+    "kinds": ["cargo", "shell"]
+  }
+}
+```
+
+## Code Actions
+
+rust-analyzer provides extensive code actions:
+
+- **Import suggestions**: Add missing imports
+- **Fill match arms**: Complete match expressions
+- **Add derive**: Add derive macros to structs
+- **Extract function**: Extract code to a new function
+- **Inline**: Inline variables or functions
+- **Generate implementations**: Implement traits
+
+## Workspace Detection
+
+Glass detects your Rust workspace by finding `Cargo.toml` files:
+
+```rust
+// From crates/languages/src/rust.rs:CargoManifestProvider
+fn search(&self, query: ManifestQuery) -> Option<Arc<RelPath>> {
+    // Walks up directory tree finding Cargo.toml
+    // Returns outermost manifest (workspace root)
+}
+```
+
+<Tip>
+For multi-package workspaces, Glass uses the outermost `Cargo.toml` as the workspace root.
+</Tip>
+
+## Platform-Specific Notes
+
+### Linux
+
+- Auto-detects GNU libc vs musl
+- Tests with `ldd --version` or scans `/lib` directory
+- Downloads appropriate binary automatically
+
+### macOS
+
+- Uses `apple-darwin` builds
+- Full support for Apple Silicon (aarch64)
+
+### Windows
+
+- Downloads `.zip` archives with `.exe` binary
+- Uses `pc-windows-msvc` builds
+
+### FreeBSD
+
+- Uses `unknown-freebsd` builds
+- May require manual compilation for some architectures
+
+## Troubleshooting
+
+<Tabs>
+  <Tab title="Server Not Starting">
+    Check that rust-analyzer works:
+    
+    ```bash
+    rust-analyzer --version
+    ```
+    
+    If installed via rustup:
+    ```bash
+    rustup component add rust-analyzer
+    ```
+    
+    Glass logs server startup in the LSP logs (Cmd/Ctrl+Shift+P → "language server: Show logs").
+  </Tab>
+  
+  <Tab title="Slow Performance">
+    For large projects, configure:
+    
+    ```json
+    {
+      "lsp": {
+        "rust-analyzer": {
+          "initialization_options": {
+            "cargo": {
+              "targetDir": true,
+              "loadOutDirsFromCheck": true
+            }
+          }
+        }
+      }
+    }
+    ```
+    
+    This uses a separate target directory for rust-analyzer's cargo checks.
+  </Tab>
+  
+  <Tab title="Workspace Issues">
+    For workspace crates, ensure your workspace `Cargo.toml` includes:
+    
+    ```toml
+    [workspace]
+    members = ["crate1", "crate2"]
+    resolver = "2"
+    ```
+    
+    Glass will detect the workspace root and configure rust-analyzer appropriately.
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+- Configure [rust-analyzer settings](https://rust-analyzer.github.io/manual.html#configuration)
+- Learn about [Cargo task templates](/features/tasks)
+- Explore [code actions and refactoring](/features/editor)

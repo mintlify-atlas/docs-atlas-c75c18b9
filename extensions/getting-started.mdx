@@ -1,0 +1,226 @@
+---
+title: Getting Started with Extensions
+description: Learn how to build extensions for Glass code editor using Rust and WebAssembly
+---
+
+## Getting Started with Extensions
+
+Glass extensions allow you to extend the editor with custom languages, themes, debuggers, slash commands, and more. Extensions are written in Rust, compiled to WebAssembly, and distributed through the extension registry.
+
+## What You Can Build
+
+Extensions can provide:
+
+- **Languages**: Add support for new programming languages with syntax highlighting, language servers, and more
+- **Themes**: Create custom color schemes and icon themes
+- **Debuggers**: Integrate Debug Adapter Protocol (DAP) servers
+- **Slash Commands**: Add custom commands to the Assistant panel
+- **MCP Servers**: Expose Model Context Protocol servers
+
+## Prerequisites
+
+Before developing extensions, you need:
+
+<Steps>
+
+### Install Rust via rustup
+
+Extensions are written in Rust and compiled to WebAssembly. Install Rust using rustup:
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+<Note>
+Rust must be installed via rustup. If you have Rust installed via homebrew or another method, installing dev extensions will not work.
+</Note>
+
+### Add the WASM target
+
+Add the WebAssembly compilation target:
+
+```sh
+rustup target add wasm32-wasip1
+```
+
+</Steps>
+
+## Creating Your First Extension
+
+<Steps>
+
+### Create the extension directory
+
+Create a new directory for your extension:
+
+```sh
+mkdir my-extension
+cd my-extension
+```
+
+### Create extension.toml
+
+Every extension requires an `extension.toml` manifest:
+
+```toml
+id = "my-extension"
+name = "My Extension"
+version = "0.0.1"
+schema_version = 1
+authors = ["Your Name <you@example.com>"]
+description = "Example extension"
+repository = "https://github.com/your-name/my-extension"
+```
+
+<Tip>
+If you're building a theme extension, suffix the ID with `-theme` (e.g., `monokai-theme`).
+</Tip>
+
+### Create Cargo.toml
+
+For extensions with custom code, create a `Cargo.toml`:
+
+```toml
+[package]
+name = "my-extension"
+version = "0.0.1"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+zed_extension_api = "0.7.0"
+```
+
+<Note>
+Use the latest version of `zed_extension_api` from [crates.io](https://crates.io/crates/zed_extension_api). Check [compatibility with Glass versions](https://github.com/zed-industries/zed/blob/main/crates/extension_api#compatible-zed-versions).
+</Note>
+
+### Create src/lib.rs
+
+Implement the Extension trait in `src/lib.rs`:
+
+```rust
+use zed_extension_api as zed;
+
+struct MyExtension;
+
+impl zed::Extension for MyExtension {
+    fn new() -> Self {
+        Self
+    }
+}
+
+zed::register_extension!(MyExtension);
+```
+
+</Steps>
+
+## Extension Structure
+
+A complete extension might look like:
+
+```
+my-extension/
+  extension.toml          # Extension manifest
+  Cargo.toml             # Rust package configuration
+  LICENSE                # Required for publishing
+  src/
+    lib.rs               # Extension implementation
+  languages/
+    my-language/
+      config.toml        # Language configuration
+      highlights.scm     # Syntax highlighting
+  themes/
+    my-theme.json        # Theme definition
+```
+
+## Installing as a Dev Extension
+
+To test your extension locally without publishing:
+
+<Steps>
+
+### Open Glass Extensions
+
+Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Linux/Windows) and run **Extensions: Install Dev Extension**.
+
+### Select your extension directory
+
+Choose the directory containing your `extension.toml` file.
+
+### Check the Extensions page
+
+The published version (if any) will be replaced with your dev extension. The Extensions page will show "Overridden by dev extension".
+
+</Steps>
+
+## Debugging Extensions
+
+<CodeGroup>
+
+```sh macOS
+# View detailed logs
+open ~/Library/Logs/Glass/Glass.log
+
+# Run Glass from terminal for verbose output
+/Applications/Glass.app/Contents/MacOS/glass --foreground
+```
+
+```sh Linux
+# View detailed logs
+cat ~/.local/share/glass/logs/Glass.log
+
+# Run Glass from terminal for verbose output
+glass --foreground
+```
+
+</CodeGroup>
+
+<Tip>
+The `--foreground` flag shows INFO-level logs including `println!` and `dbg!` output from your extension.
+</Tip>
+
+## Extension API Reference
+
+The `Extension` trait provides methods for:
+
+- `language_server_command`: Return the command to start a language server
+- `language_server_initialization_options`: Provide LSP initialization options
+- `language_server_workspace_configuration`: Provide workspace configuration
+- `run_slash_command`: Execute custom slash commands
+- `get_dap_binary`: Return debug adapter binary and configuration
+- `complete_slash_command_argument`: Provide completions for slash command arguments
+
+See the [zed_extension_api documentation](https://docs.rs/zed_extension_api) for the complete API.
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Language Extensions" href="/extensions/language-extensions">
+Add support for new programming languages
+</Card>
+
+<Card title="Theme Extensions" href="/extensions/theme-extensions">
+Create custom color schemes
+</Card>
+
+<Card title="Slash Commands" href="/extensions/slash-commands">
+Build custom Assistant commands
+</Card>
+
+<Card title="Debugging Extensions" href="/extensions/debugging-extensions">
+Integrate debug adapters
+</Card>
+
+</CardGroup>
+
+## Example Extensions
+
+Explore these examples in the Glass repository:
+
+- [HTML Extension](https://github.com/zed-industries/zed/tree/main/extensions/html) - Language server integration
+- [Slash Commands Example](https://github.com/zed-industries/zed/tree/main/extensions/slash-commands-example) - Custom slash commands
+- [Test Extension](https://github.com/zed-industries/zed/tree/main/extensions/test-extension) - Complete extension features

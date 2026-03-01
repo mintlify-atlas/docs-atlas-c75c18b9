@@ -1,0 +1,346 @@
+---
+title: Contribution Guidelines & Code Standards
+description: Code standards, conventions, and best practices for contributing to Glass code editor.
+---
+
+# Contribution Guidelines & Code Standards
+
+This guide covers the code standards and conventions used in Glass development.
+
+## Repository Rules
+
+<Warning>
+  Glass is a fork of `zed-industries/zed`. **NEVER** push branches, create PRs, or interact with the upstream `zed-industries/zed` repo. All branches and PRs must target `Glass-HQ/Glass` only.
+</Warning>
+
+When using the GitHub CLI:
+
+```sh
+gh pr create --repo Glass-HQ/Glass
+```
+
+## Rust Coding Guidelines
+
+### Core Principles
+
+- **Prioritize correctness and clarity** - Speed and efficiency are secondary unless specified
+- **Avoid organizational comments** - Don't summarize code. Only comment to explain "why" when it's tricky or non-obvious
+- **Prefer existing files** - Implement functionality in existing files unless it's a new logical component
+- **Never create `mod.rs` paths** - Use `src/some_module.rs` instead of `src/some_module/mod.rs`
+
+### Error Handling
+
+<Warning>
+  Never silently discard errors with `let _ =` on fallible operations.
+</Warning>
+
+Always handle errors appropriately:
+
+```rust
+// Good - propagate errors
+client.request(...).await?;
+
+// Good - log errors when ignoring
+client.request(...).await.log_err();
+
+// Good - explicit error handling
+match operation() {
+    Ok(result) => handle_result(result),
+    Err(e) => handle_error(e),
+}
+
+// Bad - silently discarding errors
+let _ = client.request(...).await?;
+```
+
+Other error handling rules:
+
+- Propagate errors with `?` when the calling function should handle them
+- Use `.log_err()` or similar when you need to ignore errors but want visibility
+- Avoid functions that panic like `unwrap()` - use `?` to propagate errors
+- Be careful with operations like indexing that may panic if indexes are out of bounds
+- Ensure async operations propagate errors to the UI layer for meaningful user feedback
+
+### Variable Naming
+
+- Use full words for variable names - no abbreviations like "q" for "queue"
+- Use variable shadowing to scope clones in async contexts:
+
+```rust
+executor.spawn({
+    let task_ran = task_ran.clone();
+    async move {
+        *task_ran.borrow_mut() = true;
+    }
+});
+```
+
+### Crate Structure
+
+When creating new crates, prefer specifying the library root path in `Cargo.toml`:
+
+```toml
+[lib]
+path = "gpui.rs"  # Instead of default lib.rs
+```
+
+This maintains consistent and descriptive naming.
+
+## GPUI Guidelines
+
+GPUI is Glass's GPU-accelerated UI framework providing state and concurrency management.
+
+### Context Types
+
+Context types allow interaction with global state, windows, entities, and system services. They're typically passed as `cx`:
+
+- **`App`** - Root context type, access to global state and entities
+- **`Context<T>`** - Provided when updating an `Entity<T>`, dereferences into `App`
+- **`AsyncApp` / `AsyncWindowContext`** - Provided by `cx.spawn`, can be held across await points
+
+### Window
+
+`Window` provides access to application window state. Passed as `window` argument before `cx`. Used for focus management, dispatching actions, drawing, and user input.
+
+### Entities
+
+An `Entity<T>` is a handle to state of type `T`:
+
+```rust
+// Reading
+thing.read(cx)  // returns &T
+thing.read_with(cx, |thing: &T, cx: &App| ...)
+
+// Updating
+thing.update(cx, |thing: &mut T, cx: &mut Context<T>| ...)
+thing.update_in(cx, |thing: &mut T, window: &mut Window, cx: &mut Context<T>| ...)
+
+// Other operations
+thing.entity_id()  // returns EntityId
+thing.downgrade()  // returns WeakEntity<T>
+```
+
+<Warning>
+  Never update an entity while it's already being updated - this will panic. Within closures, use the inner `cx` provided to the closure instead of the outer `cx`.
+</Warning>
+
+`WeakEntity<T>` is a weak handle that may no longer exist. Useful to avoid memory leaks from mutually recursive handles.
+
+### Concurrency
+
+All entity and UI rendering occurs on a single foreground thread.
+
+```rust
+// Spawn on foreground thread
+cx.spawn(async move |cx| ...)
+
+// From Context<T>
+cx.spawn(async move |this, cx| ...)  // this: WeakEntity<T>, cx: &mut AsyncApp
+
+// Background work
+cx.background_spawn(async move { ... })
+```
+
+Both return `Task<R>`, a future that can be awaited. If dropped, work is cancelled. To prevent cancellation:
+
+- Await the task in another async context
+- Detach with `task.detach()` or `task.detach_and_log_err(cx)`
+- Store the task in a field (work stops when struct is dropped)
+
+Create a ready task with `Task::ready(value)`.
+
+### Timers in Tests
+
+<Note>
+  In GPUI tests, prefer GPUI executor timers over `smol::Timer::after(...)`.
+</Note>
+
+```rust
+// Good - scheduled on GPUI's dispatcher
+cx.background_executor().timer(duration).await
+
+// Bad - may not be tracked by GPUI's scheduler
+smol::Timer::after(duration).await
+```
+
+This prevents "nothing left to run" errors when using `run_until_parked()`.
+
+### Elements and Rendering
+
+The `Render` trait renders state into an element tree using flexbox layout:
+
+```rust
+struct TextWithBorder(SharedString);
+
+impl Render for TextWithBorder {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div().border_1().child(self.0.clone())
+    }
+}
+```
+
+- `SharedString` avoids copying strings (either `&'static str` or `Arc<str>`)
+- Style methods similar to Tailwind CSS
+- Use `.when(condition, |this| ...)` for conditional attributes
+- Use `.when_some(option, |this, value| ...)` for optional values
+
+`RenderOnce` trait for components constructed just to become elements:
+
+- Takes ownership of `self`
+- Receives `&mut App` instead of `&mut Context<Self>`
+- Use `#[derive(IntoElement)]` to use directly as children
+
+### Input Events and Actions
+
+Register input event handlers:
+
+```rust
+.on_click(|event, window, cx: &mut App| ...)
+
+// Update entity in Context<T>
+.on_click(cx.listener(|this: &mut T, event, window, cx: &mut Context<T>| ...))
+```
+
+Actions represent keyboard input:
+
+```rust
+// Define actions with no data
+actions!(some_namespace, [SomeAction, AnotherAction])
+
+// Or use Action derive macro
+#[derive(Action)]
+struct MyAction { ... }
+
+// Dispatch actions
+window.dispatch_action(SomeAction.boxed_clone(), cx)
+focus_handle.dispatch_action(&SomeAction, window, cx)
+
+// Register handlers
+.on_action(|action, window, cx| ...)
+.on_action(cx.listener(|this, action, window, cx| ...))  // Common pattern
+```
+
+### Notify and Events
+
+When state changes affect rendering:
+
+```rust
+cx.notify()  // Triggers re-render and observe callbacks
+```
+
+Entity events:
+
+```rust
+// Emit events during update
+cx.emit(event)
+
+// Declare events
+impl EventEmitter<EventType> for EntityType {}
+
+// Subscribe to events
+let subscription = cx.subscribe(other_entity, |this, other_entity, event, cx| ...);
+```
+
+Store subscriptions in a `_subscriptions: Vec<Subscription>` field to keep them alive.
+
+## Pull Request Standards
+
+When opening or updating a pull request:
+
+### PR Title
+
+- Use clear, correctly capitalized, imperative format
+- Example: `Fix crash in project panel`
+- Avoid conventional commit prefixes (`fix:`, `feat:`, `docs:`)
+- No trailing punctuation
+- Optionally prefix with crate name when one crate is the clear scope
+  - Example: `git_ui: Add history view`
+
+### PR Body
+
+Include a `Release Notes:` section as the final section:
+
+```markdown
+Release Notes:
+
+- Added support for custom keybindings in terminal
+```
+
+or
+
+```markdown
+Release Notes:
+
+- N/A
+```
+
+Use one bullet:
+- `- Added ...`, `- Fixed ...`, or `- Improved ...` for user-facing changes
+- `- N/A` for docs-only and non-user-facing changes
+
+Format with a blank line after the heading.
+
+## UI/UX Checklist
+
+When changes affect UI, consult this checklist:
+
+### Accessibility / Ergonomics
+
+- Do all keyboard shortcuts work as intended?
+- Are shortcuts discoverable (tooltips, menus, docs)?
+- Do all mouse actions work (drag, context menus, resizing, scrolling)?
+- Does the feature look great in light mode and dark mode?
+- Are hover states, focus rings, and active states clear and consistent?
+- Is it usable without a mouse (keyboard-only navigation)?
+
+### Responsiveness
+
+- Does the UI scale gracefully on narrow panes, short panes, and high-DPI displays?
+- Does resizing panes or windows keep the UI usable and attractive?
+- Do dialogs or modals stay centered and within viewport bounds?
+
+### Platform Consistency
+
+- Is the feature fully usable on Windows, Linux, and Mac?
+- Does it respect system-level settings (fonts, scaling, input methods)?
+
+### Performance
+
+- All user interactions must have instant feedback
+- If the user requests something slow (e.g., LLM generation), show work-in-progress indication
+- Does it handle large files, big projects, or heavy workloads without degrading?
+- Frames must take no more than 8ms (120fps)
+
+### Consistency
+
+- Does it match Glass's design language (spacing, typography, icons)?
+- Are terminology, labels, and tone consistent with the rest of Glass?
+- Are interactions consistent (how tabs close, modals dismiss, errors show)?
+
+### User Paths & Edge Cases
+
+- What does the happy path look like?
+- What does the unhappy path look like? (errors, rejections, invalid states)
+- How does it work in offline vs. online states?
+- How does it work in unauthenticated vs. authenticated states?
+- How does it behave if data is missing, corrupted, or delayed?
+- Are error messages actionable and consistent with Glass's voice?
+
+### Discoverability & Learning
+
+- Can a first-time user figure it out without docs?
+- Is there an intuitive way to undo/redo actions?
+- Are power features discoverable but not intrusive?
+- Is there a path from beginner to expert usage (progressive disclosure)?
+
+## Avoid Creative Additions
+
+<Warning>
+  Avoid creative additions unless explicitly requested. Stay focused on the task at hand.
+</Warning>
+
+## Next Steps
+
+<Card title="Testing Practices" icon="flask" href="./testing">
+  Learn how to write and run tests for Glass
+</Card>

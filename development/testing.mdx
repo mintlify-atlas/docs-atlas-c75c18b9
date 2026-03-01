@@ -1,0 +1,522 @@
+---
+title: Testing and Tasks
+description: Run tests, execute tasks, and automate workflows directly from Glass
+---
+
+Glass provides a powerful task system that integrates testing, building, and custom workflows into your development environment. Execute tasks with a single command and view results inline.
+
+## Task System Overview
+
+The Glass task system is flexible and extensible, supporting everything from simple shell commands to complex debug scenarios.
+
+### Task Structure
+
+```rust
+// From crates/task/src/task.rs
+pub struct TaskId(pub String);
+
+pub struct SpawnInTerminal {
+    pub id: TaskId,
+    pub full_label: String,
+    pub label: String,
+    pub command: Option<String>,
+    pub args: Vec<String>,
+    pub command_label: String,
+    pub cwd: Option<PathBuf>,
+    pub env: HashMap<String, String>,
+    pub use_new_terminal: bool,
+    pub allow_concurrent_runs: bool,
+    pub reveal: RevealStrategy,
+    pub reveal_target: RevealTarget,
+    pub hide: HideStrategy,
+    pub shell: Shell,
+    // ...
+}
+```
+
+<Note>
+Each task has a unique ID that Glass uses to manage terminal tabs and track reruns. Tasks with the same ID will reuse the same terminal by default.
+</Note>
+
+## Task Templates
+
+Define reusable task templates that can be customized with variables.
+
+### Template Definition
+
+```rust
+pub struct TaskTemplate {
+    // Template configuration
+}
+
+pub use task_template::{
+    RevealStrategy,
+    HideStrategy,
+    TaskTemplates,
+};
+```
+
+Task templates support:
+- **Variable substitution** using `${VARIABLE}` syntax
+- **Environment variables** for task execution
+- **Working directory** configuration
+- **Shell selection** (bash, zsh, fish, etc.)
+
+### Variable Substitution
+
+```rust
+// From crates/task/src/task.rs
+pub enum VariableName {
+    File,              // Current file path
+    RelativeFile,      // Relative to worktree
+    RelativeDir,       // Directory relative to worktree  
+    Filename,          // Just the filename
+    Dirname,           // Parent directory
+    Stem,              // Filename without extension
+    WorktreeRoot,      // Root of current worktree
+    Symbol,            // Current symbol
+    Row,               // Cursor row
+    Column,            // Cursor column
+    SelectedText,      // Selected text
+    RunnableSymbol,    // Symbol from runnables.scm
+    PickProcessId,     // Process picker for debugging
+    Custom(Cow<'static, str>), // Custom variables
+}
+```
+
+<Tabs>
+  <Tab title="File Variables">
+    Use file-related variables in your tasks:
+
+    ```json
+    {
+      "label": "Build Current File",
+      "command": "rustc",
+      "args": ["${FILE}", "-o", "${STEM}"]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Selection Variables">
+    Access cursor position and selections:
+
+    ```json
+    {
+      "label": "Search Selected Text",
+      "command": "grep",
+      "args": ["-r", "${SELECTED_TEXT}", "."]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Symbol Variables">
+    Use symbol information from tree-sitter:
+
+    ```json
+    {
+      "label": "Run Function",
+      "command": "node",
+      "args": ["-e", "require('./').${RUNNABLE_SYMBOL}()"]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Substitute Variables Function
+
+```rust
+pub use task_template::{
+    substitute_variables_in_str,
+    substitute_variables_in_map,
+};
+```
+
+Glass provides utilities for variable substitution in:
+- **Strings** - Command and argument substitution
+- **Maps** - Environment variable substitution
+- **JSON values** - Complex configuration substitution
+
+## Task Configuration
+
+Configure tasks using JSON files in your project.
+
+<Steps>
+  <Step title="VSCode Format">
+    Glass supports VSCode's `tasks.json` format:
+
+    ```rust
+    pub use vscode_format::VsCodeTaskFile;
+    ```
+
+    Create `.vscode/tasks.json`:
+
+    ```json
+    {
+      "version": "2.0.0",
+      "tasks": [
+        {
+          "label": "Build",
+          "type": "shell",
+          "command": "cargo build",
+          "group": "build"
+        }
+      ]
+    }
+    ```
+  </Step>
+
+  <Step title="Glass Format">
+    Or use Glass's native `.glass/tasks.json` format with additional features.
+  </Step>
+
+  <Step title="Static Tasks">
+    Define static tasks in configuration:
+
+    ```rust
+    pub mod static_source;
+    ```
+
+    These tasks are available project-wide without file-based configuration.
+  </Step>
+</Steps>
+
+## Running Tasks
+
+### Spawn Tasks
+
+Execute tasks from the editor:
+
+```rust
+// From crates/editor/src/actions.rs
+pub struct SpawnNearestTask {
+    pub reveal: task::RevealStrategy,
+}
+```
+
+Task spawning options:
+- **Spawn nearest task** - Run the task closest to your cursor
+- **Task picker** - Select from all available tasks
+- **Rerun last task** - Quickly rerun the most recent task
+
+<Tip>
+Bind `SpawnNearestTask` to a keyboard shortcut for quick access to the most relevant task for your current context.
+</Tip>
+
+## Terminal Integration
+
+Tasks run in integrated terminals with rich features.
+
+### Terminal Behavior
+
+```rust
+pub struct SpawnInTerminal {
+    pub use_new_terminal: bool,
+    pub allow_concurrent_runs: bool,
+    pub reveal: RevealStrategy,
+    pub reveal_target: RevealTarget,
+    pub hide: HideStrategy,
+    pub show_summary: bool,
+    pub show_command: bool,
+    pub show_rerun: bool,
+}
+```
+
+<Tabs>
+  <Tab title="Reveal Strategy">
+    Control when and how terminals are revealed:
+
+    ```rust
+    pub enum RevealStrategy {
+        Always,    // Always show terminal
+        Never,     // Keep terminal hidden
+        OnError,   // Only show on failure
+    }
+    ```
+  </Tab>
+
+  <Tab title="Hide Strategy">
+    Configure terminal behavior after task completion:
+
+    ```rust
+    pub enum HideStrategy {
+        Never,           // Keep terminal open
+        OnSuccess,       // Hide if task succeeded
+        Always,          // Always hide
+    }
+    ```
+  </Tab>
+
+  <Tab title="Reveal Target">
+    Choose where to show task output:
+
+    ```rust
+    pub use zed_actions::RevealTarget;
+    ```
+
+    - **Terminal panel** - Dedicated task output area
+    - **Editor split** - Show inline with code
+    - **Dock** - Use the dock panel
+  </Tab>
+</Tabs>
+
+### Terminal Features
+
+- **Task summary** - Success/failure indication
+- **Command display** - Show the executed command
+- **Rerun button** - Quick access to rerun tasks
+- **Terminal reuse** - Same task reuses the same terminal
+- **Concurrent tasks** - Run multiple tasks simultaneously
+
+## Shell Configuration
+
+Choose which shell executes your tasks.
+
+### Shell Selection
+
+```rust
+pub use util::shell::{Shell, ShellKind};
+pub use util::shell_builder::ShellBuilder;
+```
+
+Supported shells:
+- **bash**
+- **zsh**
+- **fish**
+- **sh**
+- **PowerShell** (Windows)
+- **cmd** (Windows)
+
+<Note>
+Glass respects your system's default shell but allows per-task shell configuration for compatibility with shell-specific features.
+</Note>
+
+## Resolved Tasks
+
+Tasks go through a resolution process before execution.
+
+### Resolution Process
+
+```rust
+pub struct ResolvedTask {
+    pub id: TaskId,
+    original_task: TaskTemplate,
+    pub resolved_label: String,
+    substituted_variables: HashSet<VariableName>,
+    pub resolved: SpawnInTerminal,
+}
+```
+
+<Steps>
+  <Step title="Load Template">
+    Glass loads the task template from configuration or static sources.
+  </Step>
+
+  <Step title="Substitute Variables">
+    All variables are substituted with current context values (file path, selection, etc.).
+  </Step>
+
+  <Step title="Resolve to SpawnInTerminal">
+    The template is converted to a concrete task ready for execution.
+  </Step>
+
+  <Step title="Track Resolution">
+    Glass tracks which variables were substituted for debugging and display purposes.
+  </Step>
+</Steps>
+
+## Debug Tasks
+
+Tasks can be configured to launch debug sessions.
+
+### Debug Task Files
+
+```rust
+pub use debug_format::{
+    DebugScenario,
+    DebugTaskFile,
+    ZedDebugConfig,
+};
+
+pub use vscode_debug_format::VsCodeDebugTaskFile;
+```
+
+Debug tasks support:
+- **Launch configurations** - Start a new process
+- **Attach configurations** - Attach to running processes  
+- **Build tasks** - Compile before debugging
+- **TCP debugging** - Remote debugging scenarios
+
+### Debug Requests
+
+```rust
+pub enum Request {
+    Launch(LaunchRequest),
+    Attach(AttachRequest),
+}
+
+pub struct LaunchRequest {
+    // Launch-specific configuration
+}
+
+pub struct AttachRequest {
+    // Attach-specific configuration
+}
+```
+
+<Tabs>
+  <Tab title="Launch Request">
+    Start a new process under the debugger:
+
+    ```json
+    {
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${FILE}",
+      "args": ["--verbose"]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Attach Request">
+    Attach to an already-running process:
+
+    ```json
+    {
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Task Context
+
+Tasks receive rich context about the current editor state.
+
+### Shared Task Context
+
+```rust
+pub use task::SharedTaskContext;
+```
+
+Context includes:
+- **Current file** and worktree
+- **Cursor position** and selections
+- **Active symbol** under cursor
+- **Project metadata**
+- **Custom context** from plugins
+
+### Task Sources
+
+```rust
+// From crates/project/src/project.rs
+pub enum TaskSourceKind {
+    // Where tasks are defined
+}
+```
+
+Tasks can come from:
+- **VSCode task files** (`.vscode/tasks.json`)
+- **Glass task files** (`.glass/tasks.json`)
+- **Static configuration** (settings)
+- **Language servers** (LSP tasks)
+- **Plugins and extensions**
+
+## Testing Workflows
+
+### Language-Specific Testing
+
+Define test tasks for your project's language:
+
+<Tabs>
+  <Tab title="Rust">
+    ```json
+    {
+      "label": "Test Current File",
+      "command": "cargo",
+      "args": ["test", "--", "${STEM}"]
+    }
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```json
+    {
+      "label": "Run Jest Tests",
+      "command": "npm",
+      "args": ["test", "${RELATIVE_FILE}"]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```json
+    {
+      "label": "Run Pytest",
+      "command": "pytest",
+      "args": ["${FILE}", "-v"]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Test Output
+
+View test results in the integrated terminal:
+- **Colorized output** for easy reading
+- **Clickable file paths** to navigate to failures
+- **Summary statistics** for test runs
+- **Rerun button** to quickly retry failed tests
+
+## Best Practices
+
+1. **Use meaningful task IDs** to control terminal reuse behavior
+2. **Configure reveal strategies** to minimize disruption during development
+3. **Leverage variables** to make tasks reusable across different files
+4. **Set up debug tasks** with build steps to ensure code is always current
+5. **Organize tasks** by purpose (build, test, deploy) using labels
+6. **Use allow_concurrent_runs** carefully - some tasks shouldn't run in parallel
+7. **Configure appropriate shells** for cross-platform compatibility
+
+## Advanced Features
+
+### Task Protobuf
+
+```rust
+use proto::SpawnInTerminal;
+
+impl SpawnInTerminal {
+    pub fn to_proto(&self) -> proto::SpawnInTerminal
+    pub fn from_proto(proto: proto::SpawnInTerminal) -> Self
+}
+```
+
+Glass can serialize tasks for remote execution in collaborative sessions.
+
+### Adapter Schemas
+
+```rust
+pub use adapter_schema::{AdapterSchema, AdapterSchemas};
+```
+
+Define schemas for task adapters to provide validation and autocomplete in configuration files.
+
+### Process Picker
+
+For debug tasks:
+
+```rust
+VariableName::PickProcessId,  // Open process picker
+```
+
+The `${PICK_PROCESS_ID}` variable opens a picker to select a running process, useful for attach scenarios.
+
+## Related Features
+
+- [Debugging](/development/debugging) - Debug configurations as tasks
+- [Code Editing](/development/editing) - Spawn tasks from editor context
+- [Git Integration](/development/git-integration) - Run git commands as tasks

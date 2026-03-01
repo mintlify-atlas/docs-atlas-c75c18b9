@@ -1,0 +1,293 @@
+---
+title: "Installing Glass"
+description: "Download and install Glass on macOS, Linux, or Windows with package managers or direct downloads"
+---
+
+# Installing Glass
+
+Glass is available for macOS, Linux, and Windows. Choose your installation method based on your operating system and preferences.
+
+## macOS
+
+Glass supports macOS 12 (Monterey) and later on both Intel and Apple Silicon.
+
+### Homebrew (Recommended)
+
+Install Glass using Homebrew:
+
+```bash
+brew install --cask glass
+```
+
+For preview builds:
+
+```bash
+brew install --cask glass@preview
+```
+
+### Direct Download
+
+Download the latest `.dmg` from the [Glass releases page](https://github.com/Glass-HQ/Glass/releases):
+
+1. Download `Glass.dmg`
+2. Open the DMG file
+3. Drag Glass to your Applications folder
+4. Launch Glass from Applications
+
+<Note>
+  On first launch, macOS may ask you to verify the app. Go to **System Settings** > **Privacy & Security** and click **Open Anyway** if prompted.
+</Note>
+
+### Build from Source
+
+For development or custom builds:
+
+```bash
+git clone https://github.com/Glass-HQ/Glass.git
+cd Glass
+./script/bundle-mac-cef debug
+./run-glass.sh
+```
+
+See the [macOS development guide](/contributing/setup) for detailed build instructions.
+
+## Linux
+
+Glass supports x86_64 and aarch64 architectures on most modern Linux distributions.
+
+### Installation Script (Recommended)
+
+Install Glass with a single command:
+
+```bash
+curl -f https://glass.dev/install.sh | sh
+```
+
+Install a specific version:
+
+```bash
+curl -f https://glass.dev/install.sh | GLASS_VERSION=0.1.0 sh
+```
+
+Install preview builds:
+
+```bash
+curl -f https://glass.dev/install.sh | GLASS_CHANNEL=preview sh
+```
+
+<Warning>
+  The installation script requires `curl` and `sh`. It supports Ubuntu, Debian, Fedora, Arch, CentOS, and most major distributions.
+</Warning>
+
+### Package Managers
+
+<Tabs>
+  <Tab title="Arch Linux">
+    Using AUR:
+    
+    ```bash
+    yay -S glass-git
+    # or
+    paru -S glass-git
+    ```
+  </Tab>
+  
+  <Tab title="Debian/Ubuntu">
+    Add the Glass repository:
+    
+    ```bash
+    curl -fsSL https://glass.dev/gpg | sudo gpg --dearmor -o /usr/share/keyrings/glass-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/glass-archive-keyring.gpg] https://glass.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/glass.list
+    sudo apt update
+    sudo apt install glass
+    ```
+  </Tab>
+  
+  <Tab title="Fedora/RHEL">
+    Add the Glass repository:
+    
+    ```bash
+    sudo dnf config-manager --add-repo https://glass.dev/rpm/glass.repo
+    sudo dnf install glass
+    ```
+  </Tab>
+</Tabs>
+
+### Build from Source
+
+Build Glass on Linux:
+
+```bash
+git clone https://github.com/Glass-HQ/Glass.git
+cd Glass
+cargo build --release
+target/release/glass
+```
+
+See the [Linux development guide](/contributing/setup) for dependencies and build requirements.
+
+### System Requirements
+
+Glass requires:
+- **Vulkan 1.3** compatible GPU driver
+- Desktop portals: `FileChooser`, `OpenURI`, `Secret`
+- **glibc 2.31** or newer (most distributions from 2020+)
+
+## Windows
+
+Glass supports Windows 10 (version 1903) and later, including Windows 11.
+
+### WinGet (Recommended)
+
+Install using Windows Package Manager:
+
+```powershell
+winget install -e --id Glass-HQ.Glass
+```
+
+For preview builds:
+
+```powershell
+winget install -e --id Glass-HQ.Glass.Preview
+```
+
+### Direct Download
+
+Download the installer from the [Glass releases page](https://github.com/Glass-HQ/Glass/releases):
+
+1. Download `Glass-Setup.exe`
+2. Run the installer
+3. Follow the installation wizard
+4. Launch Glass from the Start menu
+
+### Chocolatey
+
+Install using Chocolatey:
+
+```powershell
+choco install glass
+```
+
+### Build from Source
+
+Build Glass on Windows:
+
+```powershell
+git clone https://github.com/Glass-HQ/Glass.git
+cd Glass
+cargo build --release
+target\release\glass.exe
+```
+
+See the [Windows development guide](/contributing/setup) for dependencies.
+
+### System Requirements
+
+- **DirectX 11** compatible GPU (most PCs from 2012+)
+- Current GPU drivers (not Microsoft Basic Display Adapter)
+- 64-bit operating system (x64 or ARM64)
+
+## CLI Installation
+
+After installing Glass, set up the command-line interface:
+
+### macOS/Linux
+
+```bash
+glass --install-cli
+```
+
+This creates a `glass` symlink in `/usr/local/bin` (may require `sudo`).
+
+### Windows
+
+The CLI is automatically added to PATH during installation. Verify:
+
+```powershell
+glass --version
+```
+
+## Verify Installation
+
+Check that Glass is installed correctly:
+
+```bash
+glass --version
+```
+
+You should see output like:
+
+```
+Glass 0.1.0 (based on Zed 0.216.0)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Open your first project and learn the basics
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Customize settings, themes, and keybindings
+  </Card>
+  
+  <Card title="Extensions" icon="puzzle-piece" href="/extensions/overview">
+    Install language support and extensions
+  </Card>
+  
+  <Card title="Troubleshooting" icon="wrench" href="/reference/troubleshooting">
+    Fix common installation issues
+  </Card>
+</CardGroup>
+
+## Uninstalling
+
+To uninstall Glass:
+
+<Tabs>
+  <Tab title="macOS">
+    If installed via Homebrew:
+    
+    ```bash
+    brew uninstall --cask glass
+    ```
+    
+    If installed manually, delete from Applications and run:
+    
+    ```bash
+    rm -rf ~/.config/glass
+    rm -rf ~/.local/share/glass
+    ```
+  </Tab>
+  
+  <Tab title="Linux">
+    If installed via script:
+    
+    ```bash
+    glass --uninstall
+    ```
+    
+    Manual removal:
+    
+    ```bash
+    rm -rf ~/.config/glass
+    rm -rf ~/.local/share/glass
+    rm /usr/local/bin/glass
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    Use Windows Settings:
+    
+    1. Open **Settings** > **Apps**
+    2. Search for "Glass"
+    3. Click **Uninstall**
+    
+    Or use WinGet:
+    
+    ```powershell
+    winget uninstall Glass-HQ.Glass
+    ```
+  </Tab>
+</Tabs>

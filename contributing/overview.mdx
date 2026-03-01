@@ -1,0 +1,107 @@
+---
+title: Contributing to Glass
+description: Learn how to contribute to Glass code editor, based on Zed. From bug fixes to features, your contributions help make Glass better.
+---
+
+# Contributing to Glass
+
+Thank you for helping us make Glass better! Glass is a fork of Zed, built to provide a powerful code editing experience.
+
+## Contributing Philosophy
+
+Glass values working code and synchronous conversations over long discussion threads. The best way to get us to take a look at a proposed change is to send a pull request.
+
+### What We Love
+
+We especially appreciate contributions that are:
+
+- **Fixing or extending the docs** - Help others understand Glass better
+- **Fixing bugs** - Making Glass more stable and reliable
+- **Small enhancements** - Making features work for more people (across platforms, modes, etc.)
+- **Small extra features** - Keybindings or actions you miss from other editors
+
+### Finding Contribution Ideas
+
+Looking for concrete ideas?
+
+- Browse [triaged bugs with confirmed steps to reproduce](https://github.com/Glass-HQ/Glass/issues?q=is%3Aissue+state%3Aopen+label%3Abug)
+- Check area labels to find bugs in specific parts you care about
+- Look for documentation gaps or unclear explanations
+
+## Contribution Guidelines
+
+### Making Your PR Successful
+
+While we review all pull requests, PRs have the best chance of being merged when they:
+
+<Steps>
+  <Step title="Ensure the change is desired">
+    We're always happy to accept bugfixes. For features, confirm with us first to avoid wasted effort. If there isn't already a GitHub issue with staff confirmation, start with a discussion rather than a PR.
+  </Step>
+  
+  <Step title="Include a clear description">
+    Explain what you're solving and why it's important. Help reviewers understand the context and motivation.
+  </Step>
+  
+  <Step title="Include tests">
+    Add unit tests for logic changes. For UI changes, consider updating visual regression tests (macOS only).
+  </Step>
+  
+  <Step title="Attach screenshots or recordings">
+    If it changes the UI, visual context helps reviewers understand the impact.
+  </Step>
+  
+  <Step title="Keep it focused">
+    Make the PR about one thing only. If it's a bugfix, don't add two features and a refactoring on top.
+  </Step>
+</Steps>
+
+<Warning>
+  Keep AI assistance under your judgment and responsibility. It's unlikely we'll merge a vibe-coded PR that the author doesn't understand.
+</Warning>
+
+## Reviewer Guidelines
+
+The internal advice for reviewers is:
+
+- If the fix/feature is obviously great and the code is great: **Hit merge**
+- If the fix/feature is obviously great and the code is nearly great: **Send PR comments** or offer to pair to get things perfect
+- If the fix/feature is not obviously great or the code needs rewriting: **Close the PR** with a thank you and explanation
+
+## Getting Help
+
+If you need more feedback:
+
+- Be responsive to GitHub comments
+- Offer time to pair with maintainers
+- Open a PR early if you need help deciding how to fix a bug or implement a feature
+
+## What We Won't Merge
+
+Typically we don't merge:
+
+- **Extension-provided functionality** - New languages or themes belong in extensions ([extension docs](https://zed.dev/docs/extensions/developing-extensions))
+- **New file icons** - Glass's icon theme is hand-designed for cohesion
+- **Low-benefit complexity** - Features where the extra complexity isn't worth it for the number of people who benefit
+- **Giant refactorings** - Large-scale rewrites are difficult to review and maintain
+- **Non-trivial changes without tests** - Tests ensure quality and prevent regressions
+- **Stylistic-only changes** - Reducing allocations or fixing typos is great; making code "more readable" may not be
+- **AI-generated code without understanding** - Contributors must understand what they're submitting
+
+## Code of Conduct
+
+All activity in Glass forums is subject to our Code of Conduct. Additionally, contributors must sign our Contributor License Agreement before their contributions can be merged.
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Development Setup" icon="code" href="./setup">
+    Set up your development environment
+  </Card>
+  <Card title="Guidelines & Standards" icon="book" href="./guidelines">
+    Learn our code standards and conventions
+  </Card>
+  <Card title="Testing Practices" icon="flask" href="./testing">
+    Understand how to write and run tests
+  </Card>
+</CardGroup>

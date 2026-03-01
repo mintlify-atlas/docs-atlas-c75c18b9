@@ -1,0 +1,211 @@
+---
+title: Language Support
+description: Overview of Glass's language support system, LSP integration, and multi-language capabilities
+---
+
+Glass provides comprehensive language support through a combination of Tree-sitter grammars for syntax highlighting and Language Server Protocol (LSP) integration for advanced IDE features.
+
+## Architecture
+
+The language system in Glass is built on several core components:
+
+### Tree-sitter Integration
+
+Glass uses Tree-sitter for syntax highlighting, code outlining, and structural analysis:
+
+- **Grammar-based parsing**: Each language has a Tree-sitter grammar that provides precise syntax trees
+- **Incremental parsing**: Only changed portions of files are re-parsed for performance
+- **Syntax highlighting**: Tree-sitter queries map code ranges to highlight groups
+- **Code structure**: Enables buffer outlines (symbol lists) and code navigation
+
+<Note>
+Glass doesn't assign a single language to a file. Real-world files often contain multiple languages (like HTML with embedded JavaScript), and the language system reflects this reality.
+</Note>
+
+### Language Server Protocol (LSP)
+
+Glass integrates with LSP servers to provide:
+
+- Completions with semantic information
+- Go-to-definition and find-references
+- Hover documentation
+- Code actions and refactoring
+- Diagnostics (errors and warnings)
+- Inlay hints for types and parameters
+
+## Language Registry
+
+The `LanguageRegistry` manages all loaded languages and their LSP adapters:
+
+```rust
+// From crates/language/src/language.rs
+pub struct LanguageRegistry {
+    // Registered languages and their configurations
+    // LSP adapters for each language
+    // Language server status updates
+}
+```
+
+Languages are registered with:
+- Configuration (brackets, comments, etc.)
+- Tree-sitter grammar
+- File matchers (extensions, patterns)
+- LSP adapters
+- Context providers for tasks
+
+## LSP Adapter System
+
+Each language implements an `LspAdapter` trait that handles:
+
+<Tabs>
+  <Tab title="Installation">
+    ```rust
+    async fn fetch_latest_server_version() -> Result<Version>
+    async fn fetch_server_binary() -> Result<LanguageServerBinary>
+    async fn check_if_user_installed() -> Option<LanguageServerBinary>
+    ```
+    
+    Adapters can:
+    - Download and install language servers automatically
+    - Detect user-installed servers in PATH
+    - Manage multiple versions
+  </Tab>
+  
+  <Tab title="Configuration">
+    ```rust
+    async fn initialization_options() -> Result<Option<Value>>
+    async fn workspace_configuration() -> Result<Value>
+    ```
+    
+    Adapters provide:
+    - Language server initialization options
+    - Workspace-specific configuration
+    - Dynamic config based on project settings
+  </Tab>
+  
+  <Tab title="Processing">
+    ```rust
+    async fn process_completions(&self, items: &mut [CompletionItem])
+    async fn label_for_completion() -> Option<CodeLabel>
+    fn process_diagnostics(&self, params: &mut PublishDiagnosticsParams)
+    ```
+    
+    Adapters can:
+    - Transform completion items for better display
+    - Syntax-highlight completion labels
+    - Process and format diagnostics
+  </Tab>
+</Tabs>
+
+## Built-in Language Support
+
+Glass includes built-in support for these languages (from `crates/languages/src/lib.rs`):
+
+| Language | LSP Server | Features |
+|----------|-----------|----------|
+| Rust | rust-analyzer | Full IDE support, semantic tokens |
+| TypeScript/JavaScript | typescript-language-server, vtsls | Multiple servers, auto-completion |
+| Python | Pyright, Basedpyright, Ruff | Type checking, linting, formatting |
+| Go | gopls | Comprehensive Go support |
+| C/C++ | clangd | Cross-language support |
+| JSON | vscode-json-languageserver | Schema validation |
+| CSS | vscode-css-languageserver | Tailwind support |
+| YAML | yaml-language-server | Schema validation |
+| Bash | - | Syntax highlighting |
+
+<Tip>
+Additional languages can be added through Glass's extension system, which allows packaging custom grammars and LSP adapters.
+</Tip>
+
+## Language Settings
+
+Each language can be configured in your settings:
+
+```json
+{
+  "languages": {
+    "Rust": {
+      "tab_size": 4,
+      "hard_tabs": false,
+      "language_servers": ["rust-analyzer", "..."]
+    }
+  }
+}
+```
+
+### Available Settings
+
+- `tab_size`: Number of spaces for indentation
+- `hard_tabs`: Use tabs instead of spaces
+- `soft_wrap`: Text wrapping behavior
+- `language_servers`: List of LSP servers to use
+- `format_on_save`: Auto-format behavior
+- `code_actions_on_format`: Run code actions during formatting
+
+## LSP Lifecycle
+
+Language servers follow this lifecycle:
+
+1. **Detection**: Adapter checks for user-installed or downloads server
+2. **Initialization**: Server starts with workspace folders and capabilities
+3. **Configuration**: Workspace configuration sent to server
+4. **Operation**: Server provides features (completion, diagnostics, etc.)
+5. **Shutdown**: Graceful shutdown on file close or editor exit
+
+<Warning>
+Language servers have a 120-second timeout for initialization and requests by default. This can be configured in project settings.
+</Warning>
+
+## Multi-Language Files
+
+Glass handles files with multiple languages:
+
+```html
+<!-- HTML with embedded JavaScript and CSS -->
+<style>
+  .highlight { color: blue; } /* CSS */
+</style>
+
+<script>
+  console.log('Hello'); // JavaScript
+</script>
+```
+
+The syntax map tracks which language applies to each range in the buffer, enabling:
+- Correct syntax highlighting
+- Language-specific features in each section
+- Proper indentation and formatting
+
+## Task Integration
+
+Each language can provide task templates through `ContextProvider`:
+
+```rust
+fn associated_tasks(&self, file: Option<Arc<dyn File>>, cx: &App) 
+    -> Task<Option<TaskTemplates>>
+```
+
+This enables language-specific tasks like:
+- Running tests
+- Building projects
+- Executing files
+- Custom toolchain commands
+
+See the individual language pages for specific examples.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Rust Support" icon="rust" href="/languages/rust">
+    rust-analyzer integration and Cargo tasks
+  </Card>
+  <Card title="TypeScript Support" icon="js" href="/languages/typescript">
+    TypeScript, JavaScript, and JSX/TSX support
+  </Card>
+  <Card title="Python Support" icon="python" href="/languages/python">
+    Multiple LSP servers and virtual environments
+  </Card>
+  <Card title="Go Support" icon="golang" href="/languages/go">
+    gopls integration and testing features
+  </Card>
+</CardGroup>

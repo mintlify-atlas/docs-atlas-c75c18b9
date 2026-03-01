@@ -1,0 +1,466 @@
+---
+title: Building Slash Command Extensions
+description: Add custom slash commands to the Glass Assistant for workflow automation and context injection
+---
+
+## Building Slash Command Extensions
+
+Slash commands extend the Glass Assistant with custom commands that can generate text, fetch data, or transform content. They appear in the Assistant's command palette when you type `/`.
+
+## Slash Command Basics
+
+Slash commands:
+
+- Start with `/` in the Assistant panel
+- Can take arguments
+- Return text that's inserted into the conversation
+- Can provide argument completions
+- Have access to the current worktree
+
+## Example Extension
+
+The [`slash-commands-example`](https://github.com/zed-industries/zed/tree/main/extensions/slash-commands-example) extension demonstrates slash command capabilities. Install it as a dev extension to try it:
+
+```sh
+git clone https://github.com/zed-industries/zed
+cd zed/extensions/slash-commands-example
+```
+
+Then install via Extensions: Install Dev Extension.
+
+## Defining Slash Commands
+
+<Steps>
+
+### Register commands in extension.toml
+
+Add slash command entries to your `extension.toml`:
+
+```toml
+[slash_commands.echo]
+description = "echoes the provided input"
+requires_argument = true
+
+[slash_commands.pick-one]
+description = "pick one of three options"
+requires_argument = true
+
+[slash_commands.current-time]
+description = "insert the current time"
+requires_argument = false
+```
+
+**Command properties:**
+
+- `description` - Shown in the command completion menu
+- `requires_argument` - Whether the command needs at least one argument
+
+### Implement run_slash_command
+
+Implement the command logic in your extension:
+
+```rust
+use zed_extension_api::{
+    self as zed, SlashCommand, SlashCommandOutput,
+    SlashCommandOutputSection, Worktree,
+};
+
+struct MyExtension;
+
+impl zed::Extension for MyExtension {
+    fn new() -> Self {
+        Self
+    }
+
+    fn run_slash_command(
+        &self,
+        command: SlashCommand,
+        args: Vec<String>,
+        worktree: Option<&Worktree>,
+    ) -> Result<SlashCommandOutput, String> {
+        match command.name.as_str() {
+            "echo" => self.echo_command(args),
+            "pick-one" => self.pick_one_command(args),
+            "current-time" => self.current_time_command(),
+            command => Err(format!("unknown slash command: \"{command}\"")),
+        }
+    }
+}
+```
+
+</Steps>
+
+## Implementing Command Logic
+
+### Simple Text Output
+
+Return text directly:
+
+```rust
+fn echo_command(&self, args: Vec<String>) -> Result<SlashCommandOutput, String> {
+    if args.is_empty() {
+        return Err("nothing to echo".to_string());
+    }
+
+    let text = args.join(" ");
+
+    Ok(SlashCommandOutput {
+        sections: vec![SlashCommandOutputSection {
+            range: (0..text.len()).into(),
+            label: "Echo".to_string(),
+        }],
+        text,
+    })
+}
+```
+
+### Commands with Validation
+
+Validate arguments before processing:
+
+```rust
+fn pick_one_command(&self, args: Vec<String>) -> Result<SlashCommandOutput, String> {
+    let Some(selection) = args.first() else {
+        return Err("no option selected".to_string());
+    };
+
+    match selection.as_str() {
+        "option-1" | "option-2" | "option-3" => {},
+        invalid_option => {
+            return Err(format!("{invalid_option} is not a valid option"));
+        }
+    }
+
+    let text = format!("You chose {selection}.");
+
+    Ok(SlashCommandOutput {
+        sections: vec![SlashCommandOutputSection {
+            range: (0..text.len()).into(),
+            label: format!("Pick One: {selection}"),
+        }],
+        text,
+    })
+}
+```
+
+### Using Worktree Context
+
+Access project files and structure:
+
+```rust
+fn list_files_command(
+    &self,
+    args: Vec<String>,
+    worktree: Option<&Worktree>,
+) -> Result<SlashCommandOutput, String> {
+    let Some(worktree) = worktree else {
+        return Err("no worktree available".to_string());
+    };
+
+    let pattern = args.first()
+        .map(|s| s.as_str())
+        .unwrap_or("*");
+
+    // Use worktree to search for files
+    let files = search_worktree(worktree, pattern)?;
+
+    let text = files.join("\n");
+
+    Ok(SlashCommandOutput {
+        sections: vec![SlashCommandOutputSection {
+            range: (0..text.len()).into(),
+            label: format!("Files matching {}", pattern),
+        }],
+        text,
+    })
+}
+```
+
+## Output Sections
+
+`SlashCommandOutputSection` creates collapsible sections in the Assistant:
+
+```rust
+fn multi_section_command(&self) -> Result<SlashCommandOutput, String> {
+    let header = "# Results\n\n";
+    let summary = "Quick summary of findings\n\n";
+    let details = "Detailed information here...";
+
+    let text = format!("{}{}{}", header, summary, details);
+
+    Ok(SlashCommandOutput {
+        sections: vec![
+            SlashCommandOutputSection {
+                range: (0..header.len() + summary.len()).into(),
+                label: "Summary".to_string(),
+            },
+            SlashCommandOutputSection {
+                range: (header.len() + summary.len()..text.len()).into(),
+                label: "Details".to_string(),
+            },
+        ],
+        text,
+    })
+}
+```
+
+Sections are rendered as expandable/collapsible creases in the Assistant context editor.
+
+## Argument Completion
+
+Provide completions when users type arguments:
+
+```rust
+impl zed::Extension for MyExtension {
+    fn complete_slash_command_argument(
+        &self,
+        command: SlashCommand,
+        args: Vec<String>,
+    ) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
+        match command.name.as_str() {
+            "echo" => {
+                // No completions for free-form text
+                Ok(vec![])
+            },
+            "pick-one" => Ok(vec![
+                SlashCommandArgumentCompletion {
+                    label: "Option One".to_string(),
+                    new_text: "option-1".to_string(),
+                    run_command: true,
+                },
+                SlashCommandArgumentCompletion {
+                    label: "Option Two".to_string(),
+                    new_text: "option-2".to_string(),
+                    run_command: true,
+                },
+                SlashCommandArgumentCompletion {
+                    label: "Option Three".to_string(),
+                    new_text: "option-3".to_string(),
+                    run_command: true,
+                },
+            ]),
+            "file-type" => self.complete_file_types(args),
+            command => Err(format!("unknown slash command: \"{command}\"")),
+        }
+    }
+}
+```
+
+**SlashCommandArgumentCompletion fields:**
+
+- `label` - Text shown in the completion menu
+- `new_text` - Text inserted when selected
+- `run_command` - Whether to execute the command immediately after insertion
+
+## Dynamic Completions
+
+Generate completions based on context:
+
+```rust
+fn complete_file_types(
+    &self,
+    args: Vec<String>,
+) -> Result<Vec<SlashCommandArgumentCompletion>, String> {
+    let query = args.first().map(|s| s.as_str()).unwrap_or("");
+
+    let file_types = vec!["rust", "javascript", "typescript", "python", "go"];
+
+    let completions = file_types
+        .into_iter()
+        .filter(|ft| ft.starts_with(query))
+        .map(|ft| SlashCommandArgumentCompletion {
+            label: ft.to_string(),
+            new_text: ft.to_string(),
+            run_command: true,
+        })
+        .collect();
+
+    Ok(completions)
+}
+```
+
+## Using HTTP Requests
+
+Fetch data from external APIs:
+
+```rust
+use zed_extension_api::http_client::{HttpRequest, HttpMethod};
+
+fn fetch_command(&self, args: Vec<String>) -> Result<SlashCommandOutput, String> {
+    let url = args.first()
+        .ok_or("URL required")?;
+
+    let request = HttpRequest::builder()
+        .method(HttpMethod::Get)
+        .url(url)
+        .header("User-Agent", "Glass Extension")
+        .build()
+        .map_err(|e| format!("Failed to build request: {}", e))?;
+
+    let response = request.fetch()
+        .map_err(|e| format!("Request failed: {}", e))?;
+
+    if response.status != 200 {
+        return Err(format!("HTTP {}", response.status));
+    }
+
+    let text = String::from_utf8(response.body)
+        .map_err(|e| format!("Invalid UTF-8: {}", e))?;
+
+    Ok(SlashCommandOutput {
+        sections: vec![SlashCommandOutputSection {
+            range: (0..text.len()).into(),
+            label: format!("Response from {}", url),
+        }],
+        text,
+    })
+}
+```
+
+## Example: Complete Slash Command Extension
+
+<CodeGroup>
+
+```toml extension.toml
+id = "docs-helper"
+name = "Docs Helper"
+version = "0.1.0"
+schema_version = 1
+authors = ["Your Name <you@example.com>"]
+description = "Helpful slash commands for documentation"
+repository = "https://github.com/you/docs-helper"
+
+[slash_commands.toc]
+description = "generate table of contents from headings"
+requires_argument = false
+
+[slash_commands.timestamp]
+description = "insert current timestamp"
+requires_argument = false
+```
+
+```rust src/lib.rs
+use zed_extension_api::{
+    self as zed, SlashCommand, SlashCommandOutput,
+    SlashCommandOutputSection, Worktree,
+};
+
+struct DocsHelperExtension;
+
+impl zed::Extension for DocsHelperExtension {
+    fn new() -> Self {
+        Self
+    }
+
+    fn run_slash_command(
+        &self,
+        command: SlashCommand,
+        _args: Vec<String>,
+        _worktree: Option<&Worktree>,
+    ) -> Result<SlashCommandOutput, String> {
+        match command.name.as_str() {
+            "toc" => self.generate_toc(),
+            "timestamp" => self.insert_timestamp(),
+            cmd => Err(format!("Unknown command: {}", cmd)),
+        }
+    }
+}
+
+impl DocsHelperExtension {
+    fn generate_toc(&self) -> Result<SlashCommandOutput, String> {
+        let text = "# Table of Contents\n\n- [Introduction](#intro)\n- [Setup](#setup)";
+        Ok(SlashCommandOutput {
+            sections: vec![SlashCommandOutputSection {
+                range: (0..text.len()).into(),
+                label: "TOC".to_string(),
+            }],
+            text: text.to_string(),
+        })
+    }
+
+    fn insert_timestamp(&self) -> Result<SlashCommandOutput, String> {
+        use std::time::SystemTime;
+
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map_err(|e| e.to_string())?;
+
+        let text = format!("Timestamp: {}", now.as_secs());
+
+        Ok(SlashCommandOutput {
+            sections: vec![],
+            text,
+        })
+    }
+}
+
+zed::register_extension!(DocsHelperExtension);
+```
+
+```toml Cargo.toml
+[package]
+name = "docs-helper"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+zed_extension_api = "0.7.0"
+```
+
+</CodeGroup>
+
+## Testing Slash Commands
+
+<Steps>
+
+### Install as dev extension
+
+Press `Cmd+Shift+P` and run **Extensions: Install Dev Extension**.
+
+### Open the Assistant
+
+Press `Cmd+?` (macOS) or `Ctrl+?` (Linux/Windows).
+
+### Try your command
+
+Type `/` to see your commands in the completion menu, then select one to test it.
+
+### Check logs
+
+Run Glass with `--foreground` to see `println!` output:
+
+```sh
+/Applications/Glass.app/Contents/MacOS/glass --foreground
+```
+
+</Steps>
+
+## Best Practices
+
+<Tip>
+**Command Design**
+
+- Keep commands focused on a single task
+- Provide clear error messages
+- Validate arguments early
+- Use sections for long output
+- Consider argument completions for better UX
+</Tip>
+
+<Warning>
+**Performance**
+
+- Avoid long-running operations (use timeouts)
+- Cache expensive computations
+- Return early for invalid inputs
+- Consider pagination for large datasets
+</Warning>
+
+## See Also
+
+- [Extension API Reference](https://docs.rs/zed_extension_api)
+- [Slash Commands Example](https://github.com/zed-industries/zed/tree/main/extensions/slash-commands-example)
+- [HTTP Client API](https://docs.rs/zed_extension_api/latest/zed_extension_api/http_client)

@@ -1,0 +1,469 @@
+---
+title: Building Language Extensions
+description: Add support for new programming languages with syntax highlighting, language servers, and Tree-sitter grammars
+---
+
+## Building Language Extensions
+
+Language extensions add support for programming languages in Glass. They can provide syntax highlighting, language servers, Tree-sitter grammars, and language-specific features.
+
+## Language Components
+
+A complete language extension typically includes:
+
+- **Language metadata** - Configuration and file associations
+- **Grammar** - Tree-sitter parser for syntax analysis
+- **Queries** - Tree-sitter queries for highlighting and structure
+- **Language server** - LSP server for IDE features
+
+## Defining a Language
+
+<Steps>
+
+### Create language directory
+
+Create a subdirectory in `languages/` with your language configuration:
+
+```
+languages/
+  my-language/
+    config.toml
+    highlights.scm
+    brackets.scm
+    outline.scm
+```
+
+### Configure language metadata
+
+Create `languages/my-language/config.toml`:
+
+```toml
+name = "My Language"
+grammar = "my-language"
+path_suffixes = ["myl", "mylang"]
+line_comments = ["# "]
+block_comment = { start = "/*", end = "*/" }
+tab_size = 4
+hard_tabs = false
+```
+
+**Key fields:**
+
+- `name` - Human-readable name shown in the language selector
+- `grammar` - Name of the Tree-sitter grammar (registered separately)
+- `path_suffixes` - File extensions (without the dot)
+- `line_comments` - Prefixes for line comments
+- `block_comment` - Start and end delimiters for block comments
+- `tab_size` - Default indentation size
+- `hard_tabs` - Use tabs instead of spaces
+
+### Register the grammar
+
+Add a grammar reference in `extension.toml`:
+
+```toml
+[grammars.my-language]
+repository = "https://github.com/username/tree-sitter-my-language"
+rev = "58b7cac8fc14c92b0677c542610d8738c373fa81"
+```
+
+<Note>
+The `rev` field must be a Git commit SHA. For local development, use a `file://` URL for the repository.
+</Note>
+
+</Steps>
+
+## Language Server Integration
+
+<Steps>
+
+### Register the language server
+
+Add a language server entry in `extension.toml`:
+
+```toml
+[language_servers.my-language-server]
+name = "My Language LSP"
+languages = ["My Language"]
+```
+
+<Tip>
+The language name must match the `name` field in your `config.toml`.
+</Tip>
+
+### Implement language_server_command
+
+Implement the `language_server_command` method in your extension:
+
+```rust
+use zed_extension_api::{self as zed, LanguageServerId, Result};
+
+struct MyExtension {
+    cached_binary_path: Option<String>,
+}
+
+impl zed::Extension for MyExtension {
+    fn new() -> Self {
+        Self {
+            cached_binary_path: None,
+        }
+    }
+
+    fn language_server_command(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<zed::Command> {
+        // Check if binary exists in PATH
+        if let Some(path) = worktree.which("my-language-server") {
+            return Ok(zed::Command {
+                command: path,
+                args: vec!["--stdio".to_string()],
+                env: Default::default(),
+            });
+        }
+
+        // Download or install the language server
+        let server_path = self.install_language_server(language_server_id)?;
+
+        Ok(zed::Command {
+            command: server_path,
+            args: vec!["--stdio".to_string()],
+            env: Default::default(),
+        })
+    }
+}
+```
+
+### Download language servers
+
+Here's how to download a language server from GitHub Releases:
+
+```rust
+fn install_language_server(
+    &mut self,
+    language_server_id: &LanguageServerId,
+) -> Result<String> {
+    if let Some(path) = &self.cached_binary_path {
+        if fs::metadata(path).is_ok() {
+            return Ok(path.clone());
+        }
+    }
+
+    zed::set_language_server_installation_status(
+        language_server_id,
+        &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+    );
+
+    let release = zed::latest_github_release(
+        "owner/repo",
+        zed::GithubReleaseOptions {
+            require_assets: true,
+            pre_release: false,
+        },
+    )?;
+
+    let (platform, arch) = zed::current_platform();
+    let asset_name = format!(
+        "my-language-server-{}-{}.tar.gz",
+        platform_name(platform),
+        arch_name(arch)
+    );
+
+    let asset = release
+        .assets
+        .iter()
+        .find(|asset| asset.name == asset_name)
+        .ok_or_else(|| format!("No asset found: {}", asset_name))?;
+
+    zed::set_language_server_installation_status(
+        language_server_id,
+        &zed::LanguageServerInstallationStatus::Downloading,
+    );
+
+    let version_dir = format!("my-language-server-{}", release.version);
+    zed::download_file(
+        &asset.download_url,
+        &version_dir,
+        zed::DownloadedFileType::GzipTar,
+    )?;
+
+    let binary_path = format!("{}/my-language-server", version_dir);
+    self.cached_binary_path = Some(binary_path.clone());
+
+    zed::set_language_server_installation_status(
+        language_server_id,
+        &zed::LanguageServerInstallationStatus::None,
+    );
+
+    Ok(binary_path)
+}
+```
+
+</Steps>
+
+## Language Server Configuration
+
+Provide initialization options and workspace configuration:
+
+```rust
+impl zed::Extension for MyExtension {
+    fn language_server_initialization_options(
+        &mut self,
+        _language_server_id: &LanguageServerId,
+        _worktree: &zed::Worktree,
+    ) -> Result<Option<serde_json::Value>> {
+        Ok(Some(serde_json::json!({
+            "provideFormatter": true,
+            "diagnostics": {
+                "enable": true
+            }
+        })))
+    }
+
+    fn language_server_workspace_configuration(
+        &mut self,
+        server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<Option<serde_json::Value>> {
+        let settings = LspSettings::for_worktree(server_id.as_ref(), worktree)
+            .ok()
+            .and_then(|lsp_settings| lsp_settings.settings)
+            .unwrap_or_default();
+        Ok(Some(settings))
+    }
+}
+```
+
+## Tree-sitter Queries
+
+### Syntax Highlighting
+
+Create `languages/my-language/highlights.scm`:
+
+```scheme
+; Keywords
+[
+  "if"
+  "else"
+  "while"
+  "return"
+] @keyword
+
+; Functions
+(function_declaration
+  name: (identifier) @function)
+
+(call_expression
+  function: (identifier) @function)
+
+; Strings and numbers
+(string) @string
+(number) @number
+
+; Comments
+(comment) @comment
+
+; Operators
+[
+  "+"
+  "-"
+  "*"
+  "/"
+  "="
+] @operator
+```
+
+### Bracket Matching
+
+Create `languages/my-language/brackets.scm`:
+
+```scheme
+("(" @open ")" @close)
+("[" @open "]" @close)
+("{" @open "}" @close)
+
+; Disable rainbow brackets for strings
+(("\"" @open "\"" @close) (#set! rainbow.exclude))
+```
+
+### Code Outline
+
+Create `languages/my-language/outline.scm`:
+
+```scheme
+(function_declaration
+  name: (identifier) @name) @item
+
+(class_declaration
+  name: (identifier) @name) @item
+
+(method_declaration
+  name: (identifier) @name) @item
+```
+
+## Multi-Language Support
+
+If your language server supports multiple languages, map them using `language_ids`:
+
+```toml
+[language_servers.my-language-server]
+name = "My Multi LSP"
+languages = ["JavaScript", "TypeScript", "JSX"]
+
+[language_servers.my-language-server.language_ids]
+"JavaScript" = "javascript"
+"TypeScript" = "typescript"
+"JSX" = "javascriptreact"
+```
+
+## Installing Node.js-based Language Servers
+
+For language servers distributed via npm:
+
+```rust
+fn install_node_language_server(
+    &mut self,
+    language_server_id: &LanguageServerId,
+) -> Result<String> {
+    const PACKAGE_NAME: &str = "@company/language-server";
+    const SERVER_PATH: &str = "node_modules/@company/language-server/bin/server";
+
+    zed::set_language_server_installation_status(
+        language_server_id,
+        &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+    );
+
+    let version = zed::npm_package_latest_version(PACKAGE_NAME)?;
+
+    if !fs::metadata(SERVER_PATH).is_ok()
+        || zed::npm_package_installed_version(PACKAGE_NAME)?.as_ref() != Some(&version)
+    {
+        zed::set_language_server_installation_status(
+            language_server_id,
+            &zed::LanguageServerInstallationStatus::Downloading,
+        );
+        zed::npm_install_package(PACKAGE_NAME, &version)?;
+    }
+
+    Ok(SERVER_PATH.to_string())
+}
+
+fn language_server_command(
+    &mut self,
+    language_server_id: &LanguageServerId,
+    worktree: &zed::Worktree,
+) -> Result<zed::Command> {
+    let server_path = self.install_node_language_server(language_server_id)?;
+
+    Ok(zed::Command {
+        command: zed::node_binary_path()?,
+        args: vec![server_path, "--stdio".to_string()],
+        env: Default::default(),
+    })
+}
+```
+
+## Custom Completion Labels
+
+Customize how completions appear in the editor:
+
+```rust
+impl zed::Extension for MyExtension {
+    fn label_for_completion(
+        &self,
+        _language_server_id: &LanguageServerId,
+        completion: zed::lsp::Completion,
+    ) -> Option<zed::CodeLabel> {
+        let name = &completion.label;
+        let ty = completion.detail?;
+
+        // Format: "let name: Type = value"
+        let code = format!("let {}: {}", name, ty);
+
+        Some(zed::CodeLabel {
+            spans: vec![
+                zed::CodeLabelSpan::code_range(4..4 + name.len()),
+                zed::CodeLabelSpan::literal(": ", None),
+                zed::CodeLabelSpan::code_range(4 + name.len() + 2..code.len()),
+            ],
+            filter_range: (0..name.len()).into(),
+            code,
+        })
+    }
+}
+```
+
+## Example: Complete Language Extension
+
+Here's a minimal but complete language extension for Protobuf:
+
+<CodeGroup>
+
+```toml extension.toml
+id = "proto"
+name = "Protocol Buffers"
+version = "0.1.0"
+schema_version = 1
+authors = ["Your Name <you@example.com>"]
+repository = "https://github.com/you/proto-extension"
+
+[language_servers.protols]
+name = "protols"
+languages = ["Protocol Buffers"]
+
+[grammars.proto]
+repository = "https://github.com/treesitter/tree-sitter-proto"
+rev = "1a4c0b3..."
+```
+
+```rust src/lib.rs
+use zed_extension_api::{self as zed, LanguageServerId, Result};
+
+struct ProtoExtension {
+    cached_binary_path: Option<String>,
+}
+
+impl zed::Extension for ProtoExtension {
+    fn new() -> Self {
+        Self {
+            cached_binary_path: None,
+        }
+    }
+
+    fn language_server_command(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<zed::Command> {
+        if let Some(path) = worktree.which("protols") {
+            return Ok(zed::Command {
+                command: path,
+                args: vec![],
+                env: Default::default(),
+            });
+        }
+
+        Err("protols not found in PATH".to_string())
+    }
+}
+
+zed::register_extension!(ProtoExtension);
+```
+
+```toml languages/proto/config.toml
+name = "Protocol Buffers"
+grammar = "proto"
+path_suffixes = ["proto"]
+line_comments = ["// "]
+block_comment = { start = "/*", end = "*/" }
+```
+
+</CodeGroup>
+
+## See Also
+
+- [Tree-sitter Documentation](https://tree-sitter.github.io/tree-sitter/)
+- [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
+- [zed_extension_api](https://docs.rs/zed_extension_api)
+- [Glass Built-in Languages](https://github.com/zed-industries/zed/tree/main/crates/languages/src)

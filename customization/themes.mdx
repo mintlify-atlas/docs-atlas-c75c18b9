@@ -1,0 +1,191 @@
+---
+title: Themes
+description: Customize the appearance of Glass with themes and color schemes
+---
+
+Glass provides a powerful theming system that allows you to customize the editor's appearance. You can choose from built-in themes, install community themes via extensions, or create your own custom themes.
+
+## Theme Selection
+
+Glass supports both static and dynamic theme configuration. Dynamic themes automatically switch between light and dark variants based on your system appearance.
+
+### Static Theme
+
+Set a single theme that remains active regardless of system appearance:
+
+```json settings.json
+{
+  "theme": "One Dark"
+}
+```
+
+### Dynamic Theme
+
+Configure separate themes for light and dark modes:
+
+```json settings.json
+{
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "One Dark"
+  }
+}
+```
+
+<ParamField path="mode" type="string" default="system">
+  Controls theme switching behavior:
+  - `"system"` - Follows system appearance
+  - `"light"` - Always use the light theme
+  - `"dark"` - Always use the dark theme
+</ParamField>
+
+<ParamField path="light" type="string" default="One Light">
+  Theme to use in light mode
+</ParamField>
+
+<ParamField path="dark" type="string" default="One Dark">
+  Theme to use in dark mode
+</ParamField>
+
+## Theme Selector
+
+Open the theme selector with `Cmd+K Cmd+T` (macOS) or `Ctrl+K Ctrl+T` (Linux/Windows) to preview and switch themes interactively. The theme selector provides:
+
+- **Live preview** - See themes applied in real-time as you navigate
+- **Fuzzy search** - Quickly filter themes by name
+- **Theme installation** - Install new themes from the extensions marketplace
+
+The theme selector is implemented in `crates/theme_selector/` and supports filtering themes by name with fuzzy matching.
+
+## Icon Themes
+
+Glass also supports customizable icon themes for file explorer and UI elements:
+
+```json settings.json
+{
+  "icon_theme": "Zed (Default)"
+}
+```
+
+Available icon themes can be browsed through the icon theme selector or installed as extensions.
+
+## Theme Overrides
+
+<Warning>
+  Theme overrides are experimental and may change in future versions. See [GitHub issue #18078](https://github.com/zed-industries/zed/issues/18078) for details.
+</Warning>
+
+You can override specific colors in your active theme:
+
+### Global Overrides
+
+Apply overrides to the currently active theme:
+
+```json settings.json
+{
+  "experimental_theme_overrides": {
+    "background": "#1e1e2e",
+    "editor.background": "#181825",
+    "editor.foreground": "#cdd6f4",
+    "terminal.background": "#181825"
+  }
+}
+```
+
+### Per-Theme Overrides
+
+Apply different overrides for specific themes:
+
+```json settings.json
+{
+  "theme_overrides": {
+    "One Dark": {
+      "background": "#1e1e2e",
+      "editor.background": "#282c34"
+    },
+    "One Light": {
+      "background": "#fafafa",
+      "editor.background": "#ffffff"
+    }
+  }
+}
+```
+
+## UI Customization
+
+Customize font sizes and styling for the UI and editor:
+
+<CodeGroup>
+```json UI Font
+{
+  "ui_font_family": ".ZedSans",
+  "ui_font_size": 16,
+  "ui_font_weight": 400,
+  "ui_font_features": {
+    "calt": false
+  },
+  "ui_font_fallbacks": null
+}
+```
+
+```json Buffer Font
+{
+  "buffer_font_family": ".ZedMono",
+  "buffer_font_size": 15,
+  "buffer_font_weight": 400,
+  "buffer_line_height": "comfortable",
+  "buffer_font_features": {},
+  "buffer_font_fallbacks": null
+}
+```
+</CodeGroup>
+
+<ParamField path="buffer_line_height" type="string | object" default="comfortable">
+  Controls line spacing in the editor:
+  - `"comfortable"` - Relaxed spacing (1.618 ratio)
+  - `"standard"` - Standard spacing (1.3 ratio)
+  - `{"custom": 2}` - Custom line height multiplier
+</ParamField>
+
+<Tip>
+  Use `.ZedMono` for the buffer font and `.ZedSans` for the UI font. These are aliases that currently map to Lilex and IBM Plex Sans respectively. Use `.SystemUIFont` to use your system's default UI font.
+</Tip>
+
+## UI Density
+
+<Warning>
+  UI density is experimental. See [GitHub issue #18078](https://github.com/zed-industries/zed/issues/18078).
+</Warning>
+
+Adjust the spacing and size of UI elements:
+
+```json settings.json
+{
+  "ui_density": "default"
+}
+```
+
+Options:
+- `"compact"` - Tighter spacing, smaller elements (0.75x)
+- `"default"` - Standard spacing (1.0x)
+- `"comfortable"` - Looser spacing, larger elements (1.25x)
+
+## Creating Custom Themes
+
+Glass themes are defined using JSON format. Custom themes can be created as extensions and loaded at runtime through the theme registry.
+
+The theme system is implemented in `crates/theme/` with the following key components:
+
+- **ThemeRegistry** - Manages theme loading and registration
+- **ThemeSettings** - Stores active theme configuration
+- **Theme** - Contains color definitions and style overrides
+- **Appearance** - Defines light/dark appearance variants
+
+For detailed information about theme structure and creating custom themes, refer to the [extension documentation](https://zed.dev/docs/themes).
+
+## System Integration
+
+Glass respects your system's appearance settings when using dynamic themes. The `SystemAppearance` global tracks the current system appearance and triggers theme updates when the system appearance changes.
+
+Theme changes are observed through the `SettingsStore` and automatically applied to all windows and UI components.

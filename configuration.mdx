@@ -1,0 +1,526 @@
+---
+title: "Configuration Guide"
+description: "Configure Glass with settings files, project overrides, and environment variables"
+---
+
+# Configuration Guide
+
+Glass provides flexible configuration through the Settings Editor, JSON files, and project-specific overrides. This guide covers all configuration options and best practices.
+
+## Settings System Overview
+
+Glass uses a layered settings system:
+
+1. **Default settings** - Built-in defaults from Glass
+2. **User settings** - Your global preferences
+3. **Project settings** - Project-specific overrides
+
+Settings merge from top to bottom, with later layers overriding earlier ones.
+
+## Settings Editor
+
+The Settings Editor provides a searchable interface for configuration.
+
+### Open Settings Editor
+
+<CodeGroup>
+```bash macOS
+Cmd+,
+```
+
+```bash Linux/Windows
+Ctrl+,
+```
+</CodeGroup>
+
+Or from the Command Palette:
+- Run `zed: open settings`
+
+### Using the Settings Editor
+
+<Steps>
+  <Step title="Search for Settings">
+    Type in the search box to filter settings. Results update as you type.
+  </Step>
+  
+  <Step title="Modify Values">
+    Click controls to change values. Changes save automatically to `settings.json`.
+  </Step>
+  
+  <Step title="Reset to Default">
+    Click the reset icon next to any setting to restore its default value.
+  </Step>
+</Steps>
+
+<Note>
+  Not all settings appear in the Settings Editor yet. Advanced options like language-specific formatters require editing the JSON file directly.
+</Note>
+
+## Settings Files
+
+### User Settings Location
+
+Your global settings file is located at:
+
+<Tabs>
+  <Tab title="macOS">
+    ```
+    ~/.config/glass/settings.json
+    ```
+  </Tab>
+  
+  <Tab title="Linux">
+    ```
+    ~/.config/glass/settings.json
+    ```
+    
+    Or if `XDG_CONFIG_HOME` is set:
+    ```
+    $XDG_CONFIG_HOME/glass/settings.json
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    ```
+    %APPDATA%\Glass\settings.json
+    ```
+  </Tab>
+</Tabs>
+
+### Open Settings File
+
+Edit the JSON directly:
+
+<CodeGroup>
+```bash macOS
+Cmd+Alt+,
+```
+
+```bash Linux/Windows
+Ctrl+Alt+,
+```
+</CodeGroup>
+
+Or run `zed: open settings file` from the Command Palette.
+
+### Settings File Format
+
+Settings use JSON with `//` comments:
+
+```json settings.json
+{
+  // Editor appearance
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "One Dark"
+  },
+  
+  // Font configuration
+  "buffer_font_family": "JetBrains Mono",
+  "buffer_font_size": 14,
+  "buffer_line_height": "comfortable",
+  
+  // Editor behavior
+  "tab_size": 2,
+  "format_on_save": "on",
+  "autosave": "on_focus_change",
+  
+  // UI preferences
+  "ui_font_size": 16,
+  "base_keymap": "VSCode"
+}
+```
+
+## View Default Settings
+
+See all available settings with their default values:
+
+1. Open Command Palette (`Cmd/Ctrl+Shift+P`)
+2. Run `zed: open default settings`
+
+This opens a read-only reference file showing every configurable option.
+
+## Project Settings
+
+Override user settings for specific projects.
+
+### Create Project Settings
+
+<Steps>
+  <Step title="Open Your Project">
+    Open the project folder in Glass.
+  </Step>
+  
+  <Step title="Create Settings File">
+    Run `zed: open project settings` from the Command Palette.
+    
+    This creates `.zed/settings.json` in your project root.
+  </Step>
+  
+  <Step title="Add Overrides">
+    Add project-specific settings. These only apply to this project.
+  </Step>
+</Steps>
+
+### Example Project Settings
+
+```json .zed/settings.json
+{
+  // Project-specific tab width
+  "tab_size": 4,
+  
+  // Use specific formatter
+  "formatter": "prettier",
+  "format_on_save": "on",
+  
+  // Language-specific settings
+  "languages": {
+    "Python": {
+      "tab_size": 4,
+      "formatter": "language_server"
+    },
+    "JavaScript": {
+      "tab_size": 2
+    }
+  }
+}
+```
+
+### Subdirectory Settings
+
+Create `.zed/settings.json` in any subdirectory for even more granular control:
+
+```
+my-project/
+  .zed/settings.json          # Project-wide settings
+  frontend/
+    .zed/settings.json        # Frontend-specific settings
+  backend/
+    .zed/settings.json        # Backend-specific settings
+```
+
+### Project Settings Limitations
+
+<Warning>
+  Some settings only work at the user level:
+  - `theme` and visual appearance
+  - `base_keymap`
+  - Window and UI behavior
+  
+  Project settings are limited to editor behavior and language tooling.
+</Warning>
+
+## Common Configuration
+
+### Appearance
+
+```json settings.json
+{
+  "theme": {
+    "mode": "system",  // or "light", "dark"
+    "light": "One Light",
+    "dark": "One Dark"
+  },
+  "icon_theme": "Zed (Default)",
+  "ui_font_size": 16,
+  "buffer_font_family": "JetBrains Mono",
+  "buffer_font_size": 14,
+  "buffer_line_height": "comfortable"  // or "standard", {"custom": 1.5}
+}
+```
+
+### Editor Behavior
+
+```json settings.json
+{
+  "tab_size": 2,
+  "hard_tabs": false,
+  "format_on_save": "on",  // or "off", "language_server"
+  "autosave": "on_focus_change",  // or "on_window_change", "after_delay", "off"
+  "show_whitespace": "selection",  // or "all", "none"
+  "show_wrap_guides": true,
+  "wrap_guides": [80, 120]
+}
+```
+
+### Terminal
+
+```json settings.json
+{
+  "terminal": {
+    "shell": {
+      "program": "/bin/zsh",  // or "bash", "fish", "pwsh"
+      "args": ["--login"]
+    },
+    "font_family": "JetBrains Mono",
+    "font_size": 14,
+    "blinking": "terminal_controlled",
+    "env": {
+      "EDITOR": "glass --wait"
+    }
+  }
+}
+```
+
+### Language-Specific Settings
+
+```json settings.json
+{
+  "languages": {
+    "Python": {
+      "tab_size": 4,
+      "formatter": "language_server",
+      "format_on_save": "on"
+    },
+    "JavaScript": {
+      "tab_size": 2,
+      "formatter": "prettier"
+    },
+    "Rust": {
+      "format_on_save": "on",
+      "preferred_line_length": 100
+    }
+  }
+}
+```
+
+### Git Integration
+
+```json settings.json
+{
+  "git": {
+    "git_gutter": "tracked_files",  // or "all_files", "none"
+    "inline_blame": {
+      "enabled": true,
+      "delay_ms": 1000
+    }
+  }
+}
+```
+
+## Per-Channel Settings
+
+Use different settings for Stable, Preview, or Nightly builds:
+
+```json settings.json
+{
+  "theme": "One Dark",
+  "buffer_font_size": 14,
+  
+  "nightly": {
+    "theme": "Rosé Pine",
+    "buffer_font_size": 15
+  },
+  
+  "preview": {
+    "theme": "Ayu Dark"
+  }
+}
+```
+
+With this configuration:
+- **Stable** uses One Dark at size 14
+- **Preview** uses Ayu Dark at size 14
+- **Nightly** uses Rosé Pine at size 15
+
+<Note>
+  Changes in the Settings Editor apply across all channels. Channel-specific settings only work in the JSON file.
+</Note>
+
+## Settings Deep Links
+
+Open specific settings directly using deep links:
+
+```
+glass://settings/theme
+glass://settings/buffer_font_size
+glass://settings/format_on_save
+```
+
+Use these in documentation, scripts, or shared with team members.
+
+## Advanced Configuration
+
+### Multi-Cursor Modifier
+
+```json settings.json
+{
+  "multi_cursor_modifier": "alt"  // or "cmd", "ctrl", "cmd_or_ctrl"
+}
+```
+
+### Active Pane Styling
+
+```json settings.json
+{
+  "active_pane_modifiers": {
+    "border_size": 2.0,
+    "inactive_opacity": 0.9
+  }
+}
+```
+
+### Confirm Before Quit
+
+```json settings.json
+{
+  "confirm_quit": true
+}
+```
+
+### Restore Session
+
+```json settings.json
+{
+  "restore_on_startup": "last_session"  // or "last_workspace", "none"
+}
+```
+
+### Hover Popover Delay
+
+```json settings.json
+{
+  "hover_popover_enabled": true,
+  "hover_popover_delay": 500  // milliseconds
+}
+```
+
+## Environment Variables
+
+Glass respects these environment variables:
+
+### General
+
+- `GLASS_CONFIG_DIR` - Override config directory location
+- `XDG_CONFIG_HOME` - Standard Linux config location (Linux only)
+- `EDITOR` - Set Glass as default editor: `export EDITOR="glass --wait"`
+
+### Development
+
+- `RUST_LOG` - Control logging: `export RUST_LOG=debug`
+- `GLASS_LOG` - Glass-specific logging
+- `GLASS_COPY_REMOTE_SERVER` - Path to remote server binary for development
+
+### Terminal
+
+Set in your terminal settings:
+
+```json settings.json
+{
+  "terminal": {
+    "env": {
+      "PATH": "/usr/local/bin:$PATH",
+      "NODE_ENV": "development"
+    }
+  }
+}
+```
+
+## Configuration Schema
+
+Glass settings files include a JSON schema for validation and autocomplete:
+
+```json settings.json
+{
+  "$schema": "glass://schemas/settings"
+}
+```
+
+This enables:
+- **Autocomplete** in editors that support JSON Schema
+- **Validation** to catch typos and invalid values
+- **Inline documentation** with hover tooltips
+
+## Example Configurations
+
+### Minimal Configuration
+
+```json settings.json
+{
+  "theme": "One Dark",
+  "buffer_font_family": "SF Mono",
+  "tab_size": 2,
+  "format_on_save": "on"
+}
+```
+
+### Full-Featured Configuration
+
+```json settings.json
+{
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "Ayu Dark"
+  },
+  "buffer_font_family": "JetBrains Mono",
+  "buffer_font_size": 14,
+  "buffer_line_height": "comfortable",
+  "ui_font_size": 16,
+  "base_keymap": "VSCode",
+  
+  "tab_size": 2,
+  "hard_tabs": false,
+  "format_on_save": "on",
+  "autosave": "on_focus_change",
+  "show_whitespace": "selection",
+  "wrap_guides": [80, 120],
+  
+  "terminal": {
+    "shell": {
+      "program": "/bin/zsh"
+    },
+    "font_family": "JetBrains Mono",
+    "font_size": 13
+  },
+  
+  "git": {
+    "git_gutter": "tracked_files",
+    "inline_blame": {
+      "enabled": true
+    }
+  },
+  
+  "languages": {
+    "Python": {
+      "tab_size": 4
+    },
+    "Rust": {
+      "format_on_save": "on"
+    }
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Keybindings" icon="keyboard" href="/customization/keybindings">
+    Customize keyboard shortcuts and create custom bindings
+  </Card>
+  
+  <Card title="Themes" icon="palette" href="/customization/themes">
+    Choose and customize color themes
+  </Card>
+  
+  <Card title="Languages" icon="code" href="/languages/overview">
+    Configure language-specific settings and tools
+  </Card>
+  
+  <Card title="AI Configuration" icon="sparkles" href="/ai/configuration">
+    Set up AI providers and agent settings
+  </Card>
+</CardGroup>
+
+## Settings Reference
+
+For a complete list of all available settings, see:
+
+- [All Settings Reference](/reference/settings)
+- Default settings: Run `zed: open default settings` in Glass
+- [GitHub: default.json](https://github.com/Glass-HQ/Glass/blob/main/assets/settings/default.json)
+
+<Tip>
+  Use the Settings Editor (`Cmd/Ctrl+,`) to discover settings with built-in documentation and type checking.
+</Tip>

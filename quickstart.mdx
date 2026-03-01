@@ -1,80 +1,378 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick Start Guide"
+description: "Get up and running with Glass in minutes - open projects, learn essential commands, and configure your editor"
 ---
 
-## Get started in three steps
+# Quick Start Guide
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+This guide will get you coding in Glass in just a few minutes. You'll learn how to open a project, use essential commands, and configure the editor to match your preferences.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Make sure you've [installed Glass](/installation) before starting this guide.
 </Note>
+
+## Open Your First Project
+
+Glass works best when you open a project folder rather than individual files.
+
+### From the Command Line
+
+The fastest way to open a project:
+
+```bash
+cd ~/projects/my-app
+glass .
+```
+
+Or open a specific folder:
+
+```bash
+glass ~/projects/my-app
+```
+
+### From the UI
+
+<Steps>
+  <Step title="Launch Glass">
+    Open Glass from your Applications folder, Start menu, or terminal.
+  </Step>
+  
+  <Step title="Open a Folder">
+    Press `Cmd+O` (macOS) or `Ctrl+O` (Linux/Windows) and select your project folder.
+  </Step>
+  
+  <Step title="Browse Files">
+    Your project appears in the Project Panel on the left. Click files to open them.
+  </Step>
+</Steps>
+
+<Tip>
+  Glass automatically detects your project's language and activates relevant extensions.
+</Tip>
+
+## Essential Commands
+
+Learn these commands first - they're the foundation of working efficiently in Glass.
+
+### Command Palette
+
+The command palette gives you access to every action in Glass:
+
+<CodeGroup>
+```bash macOS
+Cmd+Shift+P
+```
+
+```bash Linux/Windows
+Ctrl+Shift+P
+```
+</CodeGroup>
+
+Type any command name to find and run it. Examples:
+- `theme selector` - Change your theme
+- `install extensions` - Add language support
+- `open settings` - Configure Glass
+
+### Navigation
+
+Move around your codebase quickly:
+
+| Action | macOS | Linux/Windows |
+|--------|-------|---------------|
+| Go to File | `Cmd+P` | `Ctrl+P` |
+| Go to Symbol | `Cmd+Shift+O` | `Ctrl+Shift+O` |
+| Find in Project | `Cmd+Shift+F` | `Ctrl+Shift+F` |
+| Toggle Project Panel | `Cmd+B` | `Ctrl+B` |
+| Toggle Terminal | `Ctrl+` ` | `Ctrl+` ` |
+
+### Editing
+
+Core editing commands:
+
+| Action | macOS | Linux/Windows |
+|--------|-------|---------------|
+| Multiple Cursors | `Cmd+Click` | `Alt+Click` |
+| Select Next Match | `Cmd+D` | `Ctrl+D` |
+| Find/Replace | `Cmd+F` | `Ctrl+F` |
+| Comment Line | `Cmd+/` | `Ctrl+/` |
+| Save File | `Cmd+S` | `Ctrl+S` |
+| Save All | `Cmd+Alt+S` | `Ctrl+Alt+S` |
+
+### AI Features
+
+| Action | macOS | Linux/Windows |
+|--------|-------|---------------|
+| Open Agent Panel | `Cmd+Shift+A` | `Ctrl+Shift+A` |
+| Inline Assistant | `Cmd+Enter` | `Ctrl+Enter` |
+| Toggle Completions | `Ctrl+Space` | `Ctrl+Space` |
+
+## Configure Your Editor
+
+Make Glass feel like home with these common customizations.
+
+### Open Settings
+
+Access the Settings Editor:
+
+<CodeGroup>
+```bash macOS
+Cmd+,
+```
+
+```bash Linux/Windows
+Ctrl+,
+```
+</CodeGroup>
+
+The Settings Editor provides a searchable interface for all options. Changes save automatically.
+
+### Choose a Theme
+
+Change your color scheme:
+
+<Steps>
+  <Step title="Open Theme Selector">
+    Press `Cmd+K Cmd+T` (macOS) or `Ctrl+K Ctrl+T` (Linux/Windows)
+  </Step>
+  
+  <Step title="Browse Themes">
+    Use arrow keys or type to filter. Press Enter to apply.
+  </Step>
+</Steps>
+
+Popular themes included:
+- **One Dark** / **One Light** - VS Code inspired
+- **Ayu** - Minimal and modern
+- **Gruvbox** - Retro groove
+- **Rosé Pine** - Warm and elegant
+
+### Configure Font
+
+Customize your editor font in Settings (`Cmd+,` / `Ctrl+,`):
+
+1. Search for `buffer_font_family`
+2. Enter your preferred font name: `"JetBrains Mono"`, `"Fira Code"`, `"SF Mono"`, etc.
+3. Adjust `buffer_font_size` (default: 15)
+
+```json settings.json
+{
+  "buffer_font_family": "JetBrains Mono",
+  "buffer_font_size": 14,
+  "buffer_font_features": {
+    "calt": true  // Enable ligatures
+  }
+}
+```
+
+### Enable Format on Save
+
+Automatically format code when saving:
+
+1. Open Settings (`Cmd+,` / `Ctrl+,`)
+2. Search for `format_on_save`
+3. Set to `"on"`
+
+Or add to your settings file:
+
+```json settings.json
+{
+  "format_on_save": "on"
+}
+```
+
+### Set Up Auto-Save
+
+Save files automatically:
+
+```json settings.json
+{
+  "autosave": "on_focus_change"  // or "on_window_change", "after_delay"
+}
+```
+
+## Install Language Support
+
+Glass includes many languages by default. For others, install extensions:
+
+<Steps>
+  <Step title="Open Extensions">
+    Press `Cmd+Shift+X` (macOS) or `Ctrl+Shift+X` (Linux/Windows)
+  </Step>
+  
+  <Step title="Search and Install">
+    Find your language and click **Install**. Extensions activate immediately.
+  </Step>
+</Steps>
+
+Built-in language support includes:
+- JavaScript, TypeScript, JSX, TSX
+- Python, Rust, Go, C, C++
+- HTML, CSS, JSON, YAML, Markdown
+- Bash, Dockerfile, SQL
+
+See the [Languages](/languages/overview) section for setup guides.
+
+## Try AI Features
+
+Glass includes powerful AI capabilities. Get started:
+
+### Agent Panel
+
+Open an AI conversation:
+
+1. Press `Cmd+Shift+A` (macOS) or `Ctrl+Shift+A` (Linux/Windows)
+2. Type your question or request
+3. The AI can read files, search code, and make edits
+
+### Inline Assistant
+
+Generate or edit code in place:
+
+1. Select code or place cursor
+2. Press `Cmd+Enter` (macOS) or `Ctrl+Enter` (Linux/Windows)
+3. Describe what you want
+4. Review and accept changes
+
+<Note>
+  AI features require configuring a provider (Anthropic, OpenAI, Ollama). See the [AI Configuration](/ai/configuration) guide.
+</Note>
+
+## Set Up Terminal
+
+Glass includes an integrated terminal:
+
+### Open Terminal
+
+Press `Ctrl+` ` (backtick) to toggle the terminal panel.
+
+### Configure Shell
+
+Choose your preferred shell:
+
+```json settings.json
+{
+  "terminal": {
+    "shell": {
+      "program": "/bin/zsh"  // or "bash", "fish", etc.
+    },
+    "font_family": "JetBrains Mono",
+    "font_size": 14
+  }
+}
+```
+
+### Multiple Terminals
+
+Create additional terminals:
+- `Cmd+T` (macOS) or `Ctrl+Shift+T` (Linux/Windows) in terminal panel
+- Or right-click terminal tab bar
+
+## Configure Keybindings
+
+Glass supports multiple keymap presets and custom keybindings.
+
+### Choose a Base Keymap
+
+Switch to familiar keybindings:
+
+1. Open Settings (`Cmd+,` / `Ctrl+,`)
+2. Search for `base_keymap`
+3. Choose from:
+   - **VSCode** (default)
+   - **JetBrains**
+   - **Sublime Text**
+   - **Atom**
+   - **Emacs**
+
+### Custom Keybindings
+
+Create your own shortcuts:
+
+1. Press `Cmd+K Cmd+S` (macOS) or `Ctrl+K Ctrl+S` (Linux/Windows)
+2. Find an action and click to rebind
+3. Or edit `keymap.json` directly
+
+Example custom binding:
+
+```json keymap.json
+[
+  {
+    "bindings": {
+      "ctrl-shift-f": "workspace::NewTerminal",
+      "cmd-k cmd-d": "editor::DuplicateLine"
+    }
+  }
+]
+```
+
+See the [Keybindings Reference](/reference/keybindings) for details.
+
+## Enable Vim Mode (Optional)
+
+For Vim users:
+
+```json settings.json
+{
+  "vim_mode": true
+}
+```
+
+Restart Glass to activate Vim keybindings. See the [Keybindings](/customization/keybindings) guide for more configuration options.
+
+## Next Steps
+
+You're ready to be productive in Glass! Explore these topics next:
+
+<CardGroup cols={2}>
+  <Card title="Configuration Guide" icon="gear" href="/configuration">
+    Deep dive into settings, project config, and advanced options
+  </Card>
+  
+  <Card title="AI Features" icon="sparkles" href="/ai/overview">
+    Learn about the Agent Panel, inline assistant, and AI configuration
+  </Card>
+  
+  <Card title="Development Tools" icon="code" href="/development/editing">
+    Master editing, navigation, debugging, and Git integration
+  </Card>
+  
+  <Card title="Extensions" icon="puzzle-piece" href="/extensions/overview">
+    Discover extensions for languages, themes, and tools
+  </Card>
+</CardGroup>
+
+## Keyboard Shortcut Reference
+
+<Accordion title="View All Shortcuts">
+  ### General
+  - `Cmd/Ctrl+Shift+P` - Command palette
+  - `Cmd/Ctrl+,` - Settings
+  - `Cmd/Ctrl+K Cmd/Ctrl+S` - Keybindings editor
+  - `Cmd/Ctrl+K Cmd/Ctrl+T` - Theme selector
+  
+  ### Navigation
+  - `Cmd/Ctrl+P` - Go to file
+  - `Cmd/Ctrl+Shift+O` - Go to symbol
+  - `Cmd/Ctrl+Shift+F` - Find in project
+  - `Cmd/Ctrl+G` - Go to line
+  - `Cmd/Ctrl+B` - Toggle sidebar
+  
+  ### Editing
+  - `Cmd/Ctrl+D` - Select next match
+  - `Cmd/Ctrl+Shift+L` - Select all matches
+  - `Alt+Click` - Add cursor
+  - `Cmd/Ctrl+/` - Comment line
+  - `Cmd/Ctrl+Shift+K` - Delete line
+  
+  ### Terminal
+  - `Ctrl+` ` - Toggle terminal
+  - `Cmd/Ctrl+Shift+T` - New terminal (in terminal)
+  
+  ### AI
+  - `Cmd/Ctrl+Shift+A` - Agent panel
+  - `Cmd/Ctrl+Enter` - Inline assistant
+</Accordion>
+
+<Tip>
+  Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Linux/Windows) and type "keyboard shortcuts" to see all available shortcuts.
+</Tip>

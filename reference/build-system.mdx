@@ -1,0 +1,421 @@
+---
+title: Build System
+description: Cargo workspace configuration, build profiles, and compilation
+---
+
+## Workspace Configuration
+
+Glass uses Cargo's workspace feature to manage 200+ crates:
+
+```toml
+[workspace]
+resolver = "2"
+members = [
+    "crates/acp_tools",
+    "crates/editor",
+    "crates/workspace",
+    # ... 200+ crates
+    "extensions/glsl",
+    "extensions/html",
+    "tooling/perf",
+    "tooling/xtask",
+]
+default-members = ["crates/zed"]
+```
+
+### Workspace Resolver
+
+<Note>
+  Glass uses Cargo resolver version 2, which provides better dependency resolution and feature unification.
+</Note>
+
+## Build Profiles
+
+### Development Profile
+
+```toml
+[profile.dev]
+split-debuginfo = "unpacked"
+incremental = true
+codegen-units = 16
+```
+
+**Characteristics:**
+- Fast incremental compilation
+- Unpacked debug info for faster linking
+- 16 codegen units for parallelism
+- Optimized proc-macros (see below)
+
+### Development Build Override
+
+```toml
+[profile.dev.build-override]
+codegen-units = 16
+split-debuginfo = "unpacked"
+debug = true
+```
+
+This configuration ensures build scripts compile with similar settings, preventing duplicate compilation of ~400 crates.
+
+### Release Profile
+
+```toml
+[profile.release]
+debug = "limited"
+lto = "thin"
+codegen-units = 1
+```
+
+**Optimizations:**
+- **Thin LTO** - Link-time optimization across crates
+- **Single codegen unit** - Maximum optimization
+- **Limited debug info** - For crash reports
+
+**Exception for main binary:**
+
+```toml
+[profile.release.package]
+zed = { codegen-units = 16 }
+```
+
+The main `zed` binary uses 16 codegen units to speed up final linking.
+
+### Release-Fast Profile
+
+```toml
+[profile.release-fast]
+inherits = "release"
+debug = "full"
+lto = false
+codegen-units = 16
+```
+
+Used for faster release builds during development with full debug symbols.
+
+## Proc-Macro Optimization
+
+<Tabs>
+  <Tab title="GPUI Macros">
+    GPUI macros are heavily used during compilation:
+
+    ```toml
+    [profile.dev.package]
+    gpui_macros = { opt-level = 3 }
+    derive_refineable = { opt-level = 3 }
+    ```
+
+    Compiling at opt-level 3 significantly speeds up macro expansion.
+  </Tab>
+  
+  <Tab title="Settings Macros">
+    ```toml
+    settings_macros = { opt-level = 3 }
+    sqlez_macros = { opt-level = 3, codegen-units = 1 }
+    ui_macros = { opt-level = 3 }
+    util_macros = { opt-level = 3 }
+    ```
+  </Tab>
+  
+  <Tab title="Macro Dependencies">
+    ```toml
+    quote = { opt-level = 3 }
+    syn = { opt-level = 3 }
+    proc-macro2 = { opt-level = 3 }
+    ```
+
+    Core proc-macro dependencies are also optimized.
+  </Tab>
+</Tabs>
+
+## Critical Dependency Optimization
+
+Certain dependencies are optimized even in debug builds:
+
+```toml
+[profile.dev.package]
+# Layout engine
+taffy = { opt-level = 3 }
+
+# Graphics
+resvg = { opt-level = 3 }
+
+# WASM runtime
+wasmtime = { opt-level = 3 }
+```
+
+## Single-File Crate Optimization
+
+Small crates compile faster with a single codegen unit:
+
+```toml
+[profile.dev.package]
+activity_indicator = { codegen-units = 1 }
+assets = { codegen-units = 1 }
+breadcrumbs = { codegen-units = 1 }
+collections = { codegen-units = 1 }
+command_palette = { codegen-units = 1 }
+feature_flags = { codegen-units = 1 }
+file_icons = { codegen-units = 1 }
+# ... many more
+```
+
+This helps make full workspace builds faster.
+
+## Build Scripts
+
+Several crates use build scripts for code generation:
+
+### Protocol Buffer Generation
+
+**crates/proto/build.rs**
+- Generates Rust code from `.proto` files
+- Uses `prost-build`
+- Creates RPC message types
+
+### Language Server Types
+
+**crates/language/build.rs**
+- May generate language-specific bindings
+- Processes language definitions
+
+### Extension API
+
+**crates/extension_api/build.rs**
+- Generates WASM interface types
+- Creates extension API bindings
+
+### Platform-Specific
+
+**crates/native_platforms/src/apple/build.rs**
+- macOS and iOS specific generation
+- Objective-C bindings
+
+## Platform Targets
+
+### macOS
+
+```toml
+[package.metadata.bundle-stable]
+icon = ["resources/app-icon@2x.png", "resources/app-icon.png"]
+identifier = "dev.glass.Glass"
+name = "Glass"
+osx_minimum_system_version = "10.15.7"
+osx_info_plist_exts = ["resources/info/*"]
+osx_url_schemes = ["glass", "http", "https"]
+```
+
+### Windows
+
+```toml
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winresource = "0.1"
+```
+
+Windows builds include resource compilation for icons and manifests.
+
+### Linux
+
+No special build configuration required. Dependencies:
+
+```toml
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
+ashpd.workspace = true
+```
+
+## Build Scripts
+
+Glass provides helper scripts in the `script/` directory:
+
+### script/cargo
+
+Wraps `cargo` with additional functionality:
+- Custom build flags
+- Environment setup
+- Platform-specific configuration
+
+### script/clippy
+
+Runs Clippy with workspace settings:
+
+```bash
+./script/clippy
+```
+
+### Platform Bundling
+
+- **script/bundle-mac** - Create macOS .app bundle
+- **script/bundle-linux** - Create Linux AppImage/packages
+- **script/bundle-windows.ps1** - Create Windows installer
+
+## Dependency Patches
+
+Glass patches certain dependencies:
+
+```toml
+[patch.crates-io]
+async-task = { git = "https://github.com/smol-rs/async-task.git", rev = "..." }
+notify = { git = "https://github.com/zed-industries/notify.git", rev = "..." }
+windows-capture = { git = "https://github.com/zed-industries/windows-capture.git", rev = "..." }
+calloop = { git = "https://github.com/zed-industries/calloop" }
+```
+
+These forks contain:
+- Bug fixes
+- Performance improvements
+- Features not yet in upstream
+
+## GPUI Development
+
+For local GPUI development, uncomment the patch section:
+
+```toml
+# [patch.'https://github.com/Obsydian-HQ/gpui.git']
+# collections = { path = "../../Obsydian-HQ/gpui/crates/collections" }
+# gpui = { path = "../../Obsydian-HQ/gpui/crates/gpui" }
+# gpui_macros = { path = "../../Obsydian-HQ/gpui/crates/gpui_macros" }
+# ... etc
+```
+
+This allows developing GPUI and Glass simultaneously.
+
+## Lints Configuration
+
+### Rust Lints
+
+```toml
+[workspace.lints.rust]
+unexpected_cfgs = { level = "allow" }
+```
+
+### Clippy Lints
+
+```toml
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+declare_interior_mutable_const = "deny"
+redundant_clone = "deny"
+disallowed_methods = "deny"
+
+# Style rules are allowed
+style = { level = "allow", priority = -1 }
+```
+
+**Allowed Clippy Lints:**
+- `type_complexity` - Complex types are common in GPUI
+- `too_many_arguments` - Borrow checker constraints
+- `large_enum_variant` - Performance impact is minimal
+- `single_range_in_vec_init` - Common pattern for text ranges
+
+## License Compliance
+
+Glass uses `cargo-about` for license verification:
+
+```bash
+# Check licenses
+cargo about generate about.hbs > LICENSE.html
+```
+
+Configuration in `script/licenses/zed-licenses.toml`:
+
+```toml
+accepted = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    # ... etc
+]
+```
+
+<Note>
+  All workspace crates must specify `publish = false` or have a valid license. CI checks this automatically.
+</Note>
+
+## Build Commands
+
+### Development Build
+
+```bash
+cargo build
+# or
+./script/cargo build
+```
+
+### Release Build
+
+```bash
+cargo build --release
+```
+
+### Release-Fast Build
+
+```bash
+cargo build --profile release-fast
+```
+
+### Running Tests
+
+```bash
+cargo test
+# or specific crate
+cargo test -p editor
+```
+
+### Building Specific Crates
+
+```bash
+cargo build -p zed
+cargo build -p gpui --features test-support
+```
+
+## Compilation Performance
+
+### Parallel Compilation
+
+- Development: 16 codegen units per crate
+- Release: 1 codegen unit (except zed binary)
+- Build scripts: Mirrored configuration
+
+### Incremental Compilation
+
+Enabled in development profile:
+- Caches compilation artifacts
+- Significantly speeds up rebuilds
+- Disabled in release for maximum optimization
+
+### Link-Time Optimization
+
+<Tabs>
+  <Tab title="Thin LTO">
+    Used in release builds:
+    - Cross-crate inlining
+    - Dead code elimination
+    - Faster than full LTO
+  </Tab>
+  
+  <Tab title="No LTO">
+    Used in development:
+    - Faster linking
+    - Enabled incremental compilation
+  </Tab>
+</Tabs>
+
+## Build Artifacts
+
+Build output locations:
+
+- **target/debug/** - Development builds
+- **target/release/** - Release builds
+- **target/release-fast/** - Fast release builds
+
+### Binary Locations
+
+- **target/debug/zed** - Main application
+- **target/debug/cli** - CLI tool
+- **target/debug/zed_visual_test_runner** - Visual tests (with feature)
+
+## Related Pages
+
+- [Architecture Overview](/reference/architecture) - System design
+- [Crate Organization](/reference/crates) - Crate structure and dependencies
+- [GPUI Framework](/reference/gpui-framework) - UI framework details

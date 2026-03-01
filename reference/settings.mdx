@@ -1,0 +1,765 @@
+---
+title: Settings Reference
+description: Complete reference for all Glass code editor settings
+---
+
+This page provides a comprehensive reference for all available settings in Glass. Settings can be configured in your user settings file (`Ctrl+,` or `Cmd+,`) or per-project in `.zed/settings.json`.
+
+## Appearance
+
+### Theme
+
+<ParamField path="theme" type="object">
+  Controls the application theme.
+  
+  ```json
+  {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "One Dark"
+  }
+  ```
+  
+  - `mode`: `"system"`, `"light"`, or `"dark"`
+  - `light`: Theme name to use in light mode
+  - `dark`: Theme name to use in dark mode
+</ParamField>
+
+<ParamField path="icon_theme" type="string" default="Zed (Default)">
+  The icon theme to use for file and folder icons in the project panel.
+</ParamField>
+
+### Fonts
+
+<ParamField path="buffer_font_family" type="string" default=".ZedMono">
+  Font family for editor text. `.ZedMono` currently aliases to Lilex.
+</ParamField>
+
+<ParamField path="buffer_font_size" type="number" default="15">
+  Font size for editor text in pixels.
+</ParamField>
+
+<ParamField path="buffer_font_weight" type="number" default="400">
+  Font weight for editor text (100-900). Standard CSS units.
+</ParamField>
+
+<ParamField path="buffer_font_features" type="object" default="{}">
+  OpenType font features for editor text.
+  
+  ```json
+  {
+    "calt": false  // Disable ligatures
+  }
+  ```
+</ParamField>
+
+<ParamField path="buffer_font_fallbacks" type="array" default="null">
+  Fallback fonts for editor text. Merged with platform defaults.
+</ParamField>
+
+<ParamField path="buffer_line_height" type="string | object" default="comfortable">
+  Line height for editor text.
+  
+  - `"comfortable"`: 1.618 ratio for comfortable reading
+  - `"standard"`: 1.3 ratio
+  - `{"custom": 2}`: Custom line height value
+</ParamField>
+
+<ParamField path="ui_font_family" type="string" default=".ZedSans">
+  Font family for UI elements. `.ZedSans` aliases to IBM Plex Sans. Use `.SystemUIFont` for system font.
+</ParamField>
+
+<ParamField path="ui_font_size" type="number" default="16">
+  Font size for UI elements in pixels.
+</ParamField>
+
+<ParamField path="ui_font_weight" type="number" default="400">
+  Font weight for UI elements (100-900).
+</ParamField>
+
+<ParamField path="ui_font_features" type="object" default='{"calt": false}'>
+  OpenType font features for UI text.
+</ParamField>
+
+## Editor
+
+### Cursor and Selection
+
+<ParamField path="cursor_blink" type="boolean" default="true">
+  Whether the cursor blinks in the editor.
+</ParamField>
+
+<ParamField path="cursor_shape" type="string" default="bar">
+  Shape of the cursor in the editor.
+  
+  - `"bar"`: Vertical bar
+  - `"block"`: Block surrounding the character
+  - `"underline"`: Underscore along the character
+  - `"hollow"`: Box around the character
+</ParamField>
+
+<ParamField path="hide_mouse" type="string" default="on_typing_and_movement">
+  When to hide the mouse cursor in an editor.
+  
+  - `"never"`: Never hide
+  - `"on_typing"`: Hide only when typing
+  - `"on_typing_and_movement"`: Hide on typing and cursor movement
+</ParamField>
+
+<ParamField path="current_line_highlight" type="string" default="all">
+  How to highlight the current line.
+  
+  - `"none"`: No highlight
+  - `"gutter"`: Highlight gutter area
+  - `"line"`: Highlight editor area
+  - `"all"`: Highlight full line
+</ParamField>
+
+<ParamField path="selection_highlight" type="boolean" default="true">
+  Whether to highlight all occurrences of selected text.
+</ParamField>
+
+<ParamField path="rounded_selection" type="boolean" default="true">
+  Whether text selections have rounded corners.
+</ParamField>
+
+### Code Intelligence
+
+<ParamField path="show_completions_on_input" type="boolean" default="true">
+  Show completions menu automatically while typing.
+</ParamField>
+
+<ParamField path="show_completion_documentation" type="boolean" default="true">
+  Display inline and alongside documentation in completions menu.
+</ParamField>
+
+<ParamField path="auto_signature_help" type="boolean" default="false">
+  Show method signatures automatically when inside parentheses.
+</ParamField>
+
+<ParamField path="show_signature_help_after_edits" type="boolean" default="false">
+  Show signature help after completing or inserting bracket pairs.
+</ParamField>
+
+<ParamField path="inline_code_actions" type="boolean" default="true">
+  Show code action button at start of buffer lines.
+</ParamField>
+
+<ParamField path="hover_popover_enabled" type="boolean" default="true">
+  Show informational hover box when moving mouse over symbols.
+</ParamField>
+
+<ParamField path="hover_popover_delay" type="number" default="300">
+  Delay in milliseconds before showing hover popover.
+</ParamField>
+
+<ParamField path="inlay_hints" type="object">
+  Inlay hint configuration.
+  
+  ```json
+  {
+    "enabled": false,
+    "show_type_hints": true,
+    "show_parameter_hints": true,
+    "show_value_hints": true,
+    "show_other_hints": true,
+    "show_background": false,
+    "edit_debounce_ms": 700,
+    "scroll_debounce_ms": 50
+  }
+  ```
+</ParamField>
+
+### Editing Behavior
+
+<ParamField path="use_autoclose" type="boolean" default="true">
+  Automatically add matching closing characters when typing opening parentheses, brackets, braces, or quotes.
+</ParamField>
+
+<ParamField path="use_auto_surround" type="boolean" default="true">
+  Automatically surround selected text when typing opening parentheses, brackets, braces, or quotes.
+</ParamField>
+
+<ParamField path="auto_indent" type="boolean" default="true">
+  Adjust indentation based on context while typing.
+</ParamField>
+
+<ParamField path="auto_indent_on_paste" type="boolean" default="true">
+  Adjust indentation of pasted content based on context.
+</ParamField>
+
+<ParamField path="always_treat_brackets_as_autoclosed" type="boolean" default="false">
+  When true, skip over and auto-remove closing characters regardless of how they were inserted.
+</ParamField>
+
+<ParamField path="drag_and_drop_selection" type="object">
+  Configure drag and drop text selection.
+  
+  ```json
+  {
+    "enabled": true,
+    "delay": 300
+  }
+  ```
+  
+  - `enabled`: Enable drag and drop
+  - `delay`: Delay in milliseconds before drag is allowed
+</ParamField>
+
+<ParamField path="use_on_type_format" type="boolean" default="true">
+  Use LSP on-type formatting after trigger characters.
+</ParamField>
+
+### Display
+
+<ParamField path="show_whitespaces" type="string" default="selection">
+  When to show tabs and spaces in the editor.
+  
+  - `"selection"`: Show only in selected text
+  - `"none"`: Never show
+  - `"all"`: Always show
+  - `"boundary"`: Show only at boundaries
+  - `"trailing"`: Show only trailing whitespace
+</ParamField>
+
+<ParamField path="whitespace_map" type="object">
+  Characters used to render whitespace.
+  
+  ```json
+  {
+    "space": "•",
+    "tab": "→"
+  }
+  ```
+</ParamField>
+
+<ParamField path="show_wrap_guides" type="boolean" default="true">
+  Show vertical rulers at specified character counts.
+</ParamField>
+
+<ParamField path="wrap_guides" type="array" default="[]">
+  Character counts at which to show wrap guides.
+  
+  ```json
+  [80, 120]
+  ```
+</ParamField>
+
+<ParamField path="colorize_brackets" type="boolean" default="false">
+  Enable rainbow bracket coloring. Colors are defined by theme's `accents`.
+</ParamField>
+
+<ParamField path="snippet_sort_order" type="string" default="inline">
+  How to sort snippets relative to other completions.
+  
+  - `"top"`: Place at top
+  - `"inline"`: Normal placement
+  - `"bottom"`: Place at bottom
+  - `"none"`: Don't show in completions
+</ParamField>
+
+## File Management
+
+<ParamField path="autosave" type="string | object" default="off">
+  When to automatically save edited buffers.
+  
+  - `"off"`: Never auto-save
+  - `"on_window_change"`: Save when focus leaves window
+  - `"on_focus_change"`: Save when focus leaves buffer
+  - `{"after_delay": {"milliseconds": 500}}`: Save after idle delay
+</ParamField>
+
+<ParamField path="format_on_save" type="string" default="on">
+  Whether to format buffers before saving.
+  
+  - `"on"`: Always format
+  - `"off"`: Never format
+  
+  Note: Ignored if autosave with delay is enabled.
+</ParamField>
+
+<ParamField path="formatter" type="string | object" default="auto">
+  How to format buffers.
+  
+  - `"auto"`: Use Prettier if applicable, fallback to LSP
+  - `"language_server"`: Use current language server
+  - `{"language_server": {"name": "ruff"}}`: Use specific LSP
+  - `{"external": {"command": "prettier", "arguments": ["--stdin-filepath", "{buffer_path}"]}}`: Use external command
+  - `"prettier"`: Use Prettier integration
+  - `{"code_action": "source.fixAll.eslint"}`: Use code action
+  - `[...]`: Array of format steps to apply in order
+</ParamField>
+
+<ParamField path="remove_trailing_whitespace_on_save" type="boolean" default="true">
+  Remove trailing whitespace from lines before saving.
+</ParamField>
+
+<ParamField path="ensure_final_newline_on_save" type="boolean" default="true">
+  Ensure file ends with a single newline when saving.
+</ParamField>
+
+<ParamField path="extend_comment_on_newline" type="boolean" default="true">
+  Start new line with comment when previous line is a comment.
+</ParamField>
+
+<ParamField path="extend_list_on_newline" type="boolean" default="true">
+  Continue markdown lists when pressing enter.
+</ParamField>
+
+<ParamField path="indent_list_on_tab" type="boolean" default="true">
+  Indent list items when pressing tab after a list marker.
+</ParamField>
+
+## Layout and Navigation
+
+<ParamField path="restore_on_startup" type="string" default="last_session">
+  What to restore when starting Glass.
+  
+  - `"last_session"`: Restore all workspaces from last session
+  - `"last_workspace"`: Restore last workspace
+  - `"none"`: Start fresh
+</ParamField>
+
+<ParamField path="restore_on_file_reopen" type="boolean" default="true">
+  Restore file state (selections, folds, scroll) when reopening files.
+</ParamField>
+
+<ParamField path="pane_split_direction_horizontal" type="string" default="down">
+  Direction for horizontal pane splits.
+</ParamField>
+
+<ParamField path="pane_split_direction_vertical" type="string" default="right">
+  Direction for vertical pane splits.
+</ParamField>
+
+<ParamField path="centered_layout" type="object">
+  Centered layout padding configuration.
+  
+  ```json
+  {
+    "left_padding": 0.2,
+    "right_padding": 0.2
+  }
+  ```
+</ParamField>
+
+<ParamField path="bottom_dock_layout" type="string" default="contained">
+  Layout mode for bottom dock.
+  
+  - `"contained"`: Contained within panes
+  - `"full"`: Full width
+  - `"left_aligned"`: Aligned left
+  - `"right_aligned"`: Aligned right
+</ParamField>
+
+## Scrollbar
+
+<ParamField path="scrollbar" type="object">
+  Scrollbar configuration.
+  
+  ```json
+  {
+    "show": "auto",
+    "cursors": true,
+    "git_diff": true,
+    "search_results": true,
+    "selected_text": true,
+    "selected_symbol": true,
+    "diagnostics": "all",
+    "axes": {
+      "horizontal": true,
+      "vertical": true
+    }
+  }
+  ```
+</ParamField>
+
+## Minimap
+
+<ParamField path="minimap" type="object">
+  Minimap configuration.
+  
+  ```json
+  {
+    "show": "never",
+    "display_in": "active_editor",
+    "thumb": "always",
+    "thumb_border": "left_open",
+    "current_line_highlight": null,
+    "max_width_columns": 80
+  }
+  ```
+  
+  - `show`: `"never"`, `"auto"`, or `"always"`
+  - `display_in`: `"active_editor"` or `"all_editors"`
+</ParamField>
+
+## Gutter
+
+<ParamField path="gutter" type="object">
+  Gutter configuration.
+  
+  ```json
+  {
+    "line_numbers": true,
+    "runnables": true,
+    "breakpoints": true,
+    "folds": true,
+    "min_line_number_digits": 4
+  }
+  ```
+</ParamField>
+
+<ParamField path="indent_guides" type="object">
+  Indent guide configuration.
+  
+  ```json
+  {
+    "enabled": true,
+    "line_width": 1,
+    "active_line_width": 1,
+    "coloring": "fixed",
+    "background_coloring": "disabled"
+  }
+  ```
+</ParamField>
+
+## Search
+
+<ParamField path="search" type="object">
+  Default search options.
+  
+  ```json
+  {
+    "button": true,
+    "whole_word": false,
+    "case_sensitive": false,
+    "include_ignored": false,
+    "regex": false,
+    "center_on_match": false
+  }
+  ```
+</ParamField>
+
+<ParamField path="search_wrap" type="boolean" default="true">
+  Whether search results wrap around file ends.
+</ParamField>
+
+<ParamField path="seed_search_query_from_cursor" type="string" default="always">
+  When to populate search with text under cursor.
+  
+  - `"always"`: Always use word under cursor
+  - `"selection"`: Only when text is selected
+  - `"never"`: Never populate
+</ParamField>
+
+<ParamField path="use_smartcase_search" type="boolean" default="false">
+  Automatically adjust case sensitivity based on query (uppercase = case-sensitive).
+</ParamField>
+
+## Terminal
+
+<ParamField path="terminal" type="object">
+  Terminal configuration. See detailed options:
+  
+  ```json
+  {
+    "shell": "system",
+    "dock": "bottom",
+    "default_width": 640,
+    "default_height": 320,
+    "working_directory": "current_project_directory",
+    "blinking": "terminal_controlled",
+    "cursor_shape": "block",
+    "alternate_scroll": "on",
+    "option_as_meta": false,
+    "copy_on_select": false,
+    "button": true,
+    "line_height": "standard",
+    "font_weight": 400,
+    "max_scroll_history_lines": 10000
+  }
+  ```
+</ParamField>
+
+## Git Integration
+
+<ParamField path="git" type="object">
+  Git integration settings.
+  
+  ```json
+  {
+    "disable_git": false,
+    "enable_status": true,
+    "enable_diff": true,
+    "git_gutter": "tracked_files",
+    "gutter_debounce": 0,
+    "inline_blame": {
+      "enabled": true,
+      "delay_ms": 0,
+      "padding": 7,
+      "show_commit_summary": false,
+      "min_column": 0
+    },
+    "hunk_style": "staged_hollow",
+    "path_style": "file_name_first",
+    "worktree_directory": "../worktrees"
+  }
+  ```
+</ParamField>
+
+## Project Panel
+
+<ParamField path="project_panel" type="object">
+  Project panel configuration.
+  
+  ```json
+  {
+    "button": true,
+    "hide_gitignore": false,
+    "default_width": 240,
+    "dock": "left",
+    "file_icons": true,
+    "folder_icons": true,
+    "git_status": true,
+    "indent_size": 20,
+    "auto_reveal_entries": true,
+    "starts_open": true,
+    "auto_fold_dirs": true,
+    "show_diagnostics": "all",
+    "sort_mode": "directories_first"
+  }
+  ```
+</ParamField>
+
+## Language Servers
+
+<ParamField path="enable_language_server" type="boolean" default="true">
+  Use language servers for code intelligence.
+</ParamField>
+
+<ParamField path="language_servers" type="array" default='["..."]'>
+  Language servers to use for all languages. Typically customized per-language.
+</ParamField>
+
+<ParamField path="lsp" type="object">
+  LSP-specific settings keyed by server name.
+  
+  ```json
+  {
+    "rust-analyzer": {
+      "initialization_options": {
+        "check": {
+          "command": "clippy"
+        }
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="global_lsp_settings" type="object">
+  Common language server settings.
+  
+  ```json
+  {
+    "button": true,
+    "request_timeout": 120
+  }
+  ```
+</ParamField>
+
+## Agent (AI Assistant)
+
+<ParamField path="agent" type="object">
+  Agent panel configuration. Extensive options available:
+  
+  ```json
+  {
+    "enabled": true,
+    "button": true,
+    "dock": "right",
+    "default_width": 640,
+    "default_model": {
+      "provider": "zed.dev",
+      "model": "claude-sonnet-4"
+    },
+    "default_profile": "write",
+    "use_modifier_to_send": false
+  }
+  ```
+</ParamField>
+
+## Edit Predictions
+
+<ParamField path="edit_predictions" type="object">
+  Edit prediction (code completion) settings.
+  
+  ```json
+  {
+    "provider": "zed",
+    "mode": "eager",
+    "disabled_globs": ["**/.env*", "**/*.pem"],
+    "enabled_in_text_threads": true
+  }
+  ```
+  
+  - `mode`: `"eager"` (show when no LSP completions) or `"subtle"` (show when holding modifier)
+</ParamField>
+
+<ParamField path="show_edit_predictions" type="boolean" default="true">
+  Show edit predictions immediately (true) or manually (false).
+</ParamField>
+
+## File Scanning
+
+<ParamField path="file_scan_exclusions" type="array">
+  Files/globs excluded from file scans, searches, and project tree.
+  
+  ```json
+  ["**/.git", "**/.DS_Store", "**/node_modules"]
+  ```
+</ParamField>
+
+<ParamField path="file_scan_inclusions" type="array">
+  Files/globs to include even when ignored by git.
+  
+  ```json
+  [".env*"]
+  ```
+</ParamField>
+
+<ParamField path="hidden_files" type="array">
+  Globs for files considered "hidden" (toggleable in project panel).
+  
+  ```json
+  ["**/.*"]
+  ```
+</ParamField>
+
+## Tabs
+
+<ParamField path="tab_bar" type="object">
+  Tab bar settings.
+  
+  ```json
+  {
+    "show": true,
+    "show_nav_history_buttons": true,
+    "show_tab_bar_buttons": true
+  }
+  ```
+</ParamField>
+
+<ParamField path="tabs" type="object">
+  Individual tab settings.
+  
+  ```json
+  {
+    "git_status": false,
+    "close_position": "right",
+    "file_icons": false,
+    "show_close_button": "hover",
+    "activate_on_close": "history"
+  }
+  ```
+</ParamField>
+
+<ParamField path="preview_tabs" type="object">
+  Preview tabs configuration (temporary tabs that close automatically).
+  
+  ```json
+  {
+    "enabled": true,
+    "enable_preview_from_project_panel": true,
+    "enable_preview_from_file_finder": false
+  }
+  ```
+</ParamField>
+
+## Per-Language Settings
+
+<ParamField path="languages" type="object">
+  Language-specific settings override global settings.
+  
+  ```json
+  {
+    "Python": {
+      "tab_size": 4,
+      "format_on_save": "on",
+      "formatter": {"language_server": {"name": "ruff"}},
+      "language_servers": ["basedpyright", "ruff", "..."]
+    },
+    "JavaScript": {
+      "tab_size": 2,
+      "prettier": {"allowed": true}
+    }
+  }
+  ```
+</ParamField>
+
+## Indentation
+
+<ParamField path="hard_tabs" type="boolean" default="false">
+  Use tab characters instead of spaces for indentation.
+</ParamField>
+
+<ParamField path="tab_size" type="number" default="4">
+  Number of columns a tab character occupies.
+</ParamField>
+
+<ParamField path="preferred_line_length" type="number" default="80">
+  Column at which to soft-wrap lines (when soft-wrap is enabled).
+</ParamField>
+
+<ParamField path="soft_wrap" type="string" default="none">
+  How to soft-wrap long lines.
+  
+  - `"none"`: No wrapping
+  - `"editor_width"`: Wrap at editor width
+  - `"preferred_line_length"`: Wrap at preferred line length
+  - `"bounded"`: Wrap at smaller of editor width or preferred line length
+</ParamField>
+
+## Advanced
+
+<ParamField path="telemetry" type="object">
+  Telemetry settings.
+  
+  ```json
+  {
+    "diagnostics": true,
+    "metrics": true
+  }
+  ```
+</ParamField>
+
+<ParamField path="auto_update" type="boolean" default="true">
+  Automatically update Glass (may be ignored on Linux with package managers).
+</ParamField>
+
+<ParamField path="base_keymap" type="string" default="VSCode">
+  Base keybinding set to use.
+  
+  Options: `"VSCode"`, `"Atom"`, `"JetBrains"`, `"SublimeText"`, `"TextMate"`, `"None"`
+</ParamField>
+
+<ParamField path="node" type="object">
+  Node.js configuration for language servers.
+  
+  ```json
+  {
+    "ignore_system_version": false,
+    "path": null,
+    "npm_path": null
+  }
+  ```
+</ParamField>
+
+<ParamField path="load_direnv" type="string" default="direct">
+  How to load direnv configuration.
+  
+  - `"direct"`: Use `direnv export json`
+  - `"shell_hook"`: Use shell hook (POSIX shells and fish)
+  - `"disabled"`: Don't load direnv
+</ParamField>

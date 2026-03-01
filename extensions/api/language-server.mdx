@@ -1,0 +1,651 @@
+---
+title: Language Server Integration
+description: Integrate Language Server Protocol (LSP) servers into Glass for rich code intelligence
+---
+
+## Overview
+
+The Glass Extension API provides comprehensive support for integrating Language Server Protocol (LSP) servers. LSP enables:
+
+- Code completion and IntelliSense
+- Go to definition and find references
+- Diagnostics (errors and warnings)
+- Code actions and refactoring
+- Hover information and documentation
+- Semantic tokens and syntax highlighting
+
+<Note>
+  Glass uses the standard LSP specification. Any language server implementing the protocol can be integrated.
+</Note>
+
+## Language Server Lifecycle
+
+### Starting a Language Server
+
+Implement `language_server_command` to tell Glass how to start your language server:
+
+```rust
+use zed_extension_api::{self as zed, LanguageServerId, Result};
+
+impl zed::Extension for MyExtension {
+    fn language_server_command(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<zed::Command> {
+        Ok(zed::Command {
+            command: "/path/to/language-server".to_string(),
+            args: vec!["--stdio".to_string()],
+            env: vec![
+                ("LOG_LEVEL".to_string(), "info".to_string()),
+            ],
+        })
+    }
+}
+```
+
+<ParamField path="command" type="String" required>
+  Path to the language server executable. Can be absolute or relative.
+</ParamField>
+
+<ParamField path="args" type="Vec<String>">
+  Command-line arguments passed to the language server. Most LSP servers use `--stdio` for standard input/output communication.
+</ParamField>
+
+<ParamField path="env" type="Vec<(String, String)>">
+  Environment variables to set for the language server process.
+</ParamField>
+
+### Server Installation Status
+
+Provide feedback during language server installation:
+
+```rust
+use zed::LanguageServerInstallationStatus;
+
+fn install_server(
+    language_server_id: &LanguageServerId,
+) -> Result<String> {
+    zed::set_language_server_installation_status(
+        language_server_id,
+        &LanguageServerInstallationStatus::CheckingForUpdate,
+    );
+
+    let version = check_latest_version()?;
+
+    zed::set_language_server_installation_status(
+        language_server_id,
+        &LanguageServerInstallationStatus::Downloading,
+    );
+
+    download_server(&version)?;
+
+    // Return path to installed server
+    Ok(format!("servers/my-server-{}", version))
+}
+```
+
+Status values:
+- `None` - No active installation
+- `CheckingForUpdate` - Checking for newer versions
+- `Downloading` - Downloading the server
+- `Failed(String)` - Installation failed with error message
+
+## Configuration
+
+### Initialization Options
+
+Sent to the language server during initialization:
+
+```rust
+impl zed::Extension for MyExtension {
+    fn language_server_initialization_options(
+        &mut self,
+        _server_id: &LanguageServerId,
+        _worktree: &zed::Worktree,
+    ) -> Result<Option<zed::serde_json::Value>> {
+        Ok(Some(zed::serde_json::json!({
+            "trace": "messages",
+            "logLevel": "debug",
+            "preferences": {
+                "includeInlayHints": true
+            }
+        })))
+    }
+}
+```
+
+<Tip>
+  Initialization options are sent once when the language server starts. Use them for settings that don't change during the session.
+</Tip>
+
+### Workspace Configuration
+
+Sent to the language server in response to `workspace/configuration` requests:
+
+```rust
+impl zed::Extension for MyExtension {
+    fn language_server_workspace_configuration(
+        &mut self,
+        server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<Option<zed::serde_json::Value>> {
+        // Read user settings
+        let settings = zed::settings::LspSettings::for_worktree(
+            server_id.as_ref(),
+            worktree,
+        )?;
+
+        Ok(settings.settings)
+    }
+}
+```
+
+Users can configure workspace settings in their Glass settings:
+
+```json
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "checkOnSave": {
+          "command": "clippy"
+        }
+      },
+      "settings": {
+        "rust-analyzer.cargo.features": "all"
+      }
+    }
+  }
+}
+```
+
+### Multi-Server Configuration
+
+For extensions supporting multiple language servers, provide configuration for additional servers:
+
+```rust
+impl zed::Extension for MyExtension {
+    fn language_server_additional_initialization_options(
+        &mut self,
+        _language_server_id: &LanguageServerId,
+        target_language_server_id: &LanguageServerId,
+        _worktree: &zed::Worktree,
+    ) -> Result<Option<zed::serde_json::Value>> {
+        match target_language_server_id.as_ref() {
+            "typescript" => Ok(Some(zed::serde_json::json!({
+                "preferences": {
+                    "includeInlayParameterNameHints": "all"
+                }
+            }))),
+            "eslint" => Ok(Some(zed::serde_json::json!({
+                "run": "onType",
+                "nodePath": "./node_modules"
+            }))),
+            _ => Ok(None),
+        }
+    }
+}
+```
+
+## LSP Data Types
+
+The Extension API re-exports common LSP types:
+
+### Completion
+
+```rust
+use zed::lsp::Completion;
+
+pub struct Completion {
+    pub label: String,
+    pub kind: Option<CompletionKind>,
+    pub detail: Option<String>,
+    pub documentation: Option<String>,
+    // ... other LSP fields
+}
+```
+
+<ResponseField name="label" type="String">
+  The text displayed in the completion menu
+</ResponseField>
+
+<ResponseField name="kind" type="CompletionKind">
+  The type of completion: Function, Variable, Class, etc.
+</ResponseField>
+
+<ResponseField name="detail" type="String">
+  Additional detail, like function signature
+</ResponseField>
+
+<ResponseField name="documentation" type="String">
+  Documentation shown in completion tooltip
+</ResponseField>
+
+### Symbol
+
+```rust
+use zed::lsp::{Symbol, SymbolKind};
+
+pub struct Symbol {
+    pub name: String,
+    pub kind: SymbolKind,
+    pub range: Range,
+    // ... other fields
+}
+```
+
+<ResponseField name="name" type="String">
+  Symbol name as it appears in code
+</ResponseField>
+
+<ResponseField name="kind" type="SymbolKind">
+  Type of symbol: Function, Class, Variable, etc.
+</ResponseField>
+
+<ResponseField name="range" type="Range">
+  Location of the symbol in the file
+</ResponseField>
+
+### Symbol and Completion Kinds
+
+```rust
+use zed::lsp::{CompletionKind, SymbolKind};
+
+// Completion kinds
+CompletionKind::Function
+CompletionKind::Method
+CompletionKind::Variable
+CompletionKind::Class
+CompletionKind::Interface
+CompletionKind::Module
+CompletionKind::Property
+CompletionKind::Keyword
+// ... and more
+
+// Symbol kinds
+SymbolKind::Function
+SymbolKind::Method
+SymbolKind::Variable
+SymbolKind::Class
+SymbolKind::Interface
+SymbolKind::Namespace
+SymbolKind::Struct
+SymbolKind::Enum
+// ... and more
+```
+
+## Custom Labels
+
+Customize how completions and symbols are displayed:
+
+### Completion Labels
+
+```rust
+use zed::{CodeLabel, CodeLabelSpan, Range};
+
+impl zed::Extension for MyExtension {
+    fn label_for_completion(
+        &self,
+        _language_server_id: &LanguageServerId,
+        completion: zed::lsp::Completion,
+    ) -> Option<CodeLabel> {
+        // For functions, show with syntax highlighting
+        if completion.kind == Some(zed::lsp::CompletionKind::Function) {
+            Some(CodeLabel {
+                code: format!("fn {}()", completion.label),
+                spans: vec![
+                    CodeLabelSpan::literal("fn ", Some("keyword".to_string())),
+                    CodeLabelSpan::code_range(Range { start: 3, end: 3 + completion.label.len() as u32 }),
+                    CodeLabelSpan::literal("()", Some("punctuation".to_string())),
+                ],
+                filter_range: Range { start: 3, end: 3 + completion.label.len() as u32 },
+            })
+        } else {
+            None // Use default rendering
+        }
+    }
+}
+```
+
+<ParamField path="code" type="String" required>
+  Source code that will be parsed by Tree-sitter for syntax highlighting
+</ParamField>
+
+<ParamField path="spans" type="Vec<CodeLabelSpan>" required>
+  Defines which parts of the code to display and how to highlight them
+</ParamField>
+
+<ParamField path="filter_range" type="Range" required>
+  The range of text used when filtering/matching in the completion list
+</ParamField>
+
+### Symbol Labels
+
+Similarly, customize symbol display:
+
+```rust
+impl zed::Extension for MyExtension {
+    fn label_for_symbol(
+        &self,
+        _language_server_id: &LanguageServerId,
+        symbol: zed::lsp::Symbol,
+    ) -> Option<CodeLabel> {
+        match symbol.kind {
+            zed::lsp::SymbolKind::Function => {
+                Some(CodeLabel {
+                    code: format!("fn {}", symbol.name),
+                    spans: vec![
+                        CodeLabelSpan::literal("fn ", Some("keyword".to_string())),
+                        CodeLabelSpan::code_range(Range {
+                            start: 3,
+                            end: (3 + symbol.name.len()) as u32,
+                        }),
+                    ],
+                    filter_range: Range {
+                        start: 3,
+                        end: (3 + symbol.name.len()) as u32,
+                    },
+                })
+            }
+            _ => None,
+        }
+    }
+}
+```
+
+## Finding Server Binaries
+
+### Check PATH
+
+Look for a language server already installed on the system:
+
+```rust
+fn language_server_command(
+    &mut self,
+    _language_server_id: &LanguageServerId,
+    worktree: &zed::Worktree,
+) -> Result<zed::Command> {
+    if let Some(path) = worktree.which("rust-analyzer") {
+        return Ok(zed::Command {
+            command: path,
+            args: vec![],
+            env: Default::default(),
+        });
+    }
+
+    // Fallback: download and install
+    self.install_server()
+}
+```
+
+<Tip>
+  Always check `worktree.which()` first to respect user-installed language servers.
+</Tip>
+
+### Download from GitHub
+
+```rust
+use zed::{latest_github_release, GithubReleaseOptions, current_platform, Os, Architecture};
+
+fn download_server() -> Result<String> {
+    let release = latest_github_release(
+        "rust-lang/rust-analyzer",
+        GithubReleaseOptions {
+            require_assets: true,
+            pre_release: false,
+        },
+    )?;
+
+    let platform = current_platform();
+    let asset_name = match (platform.os, platform.arch) {
+        (Os::Mac, Architecture::Aarch64) => "rust-analyzer-aarch64-apple-darwin.gz",
+        (Os::Mac, Architecture::X8664) => "rust-analyzer-x86_64-apple-darwin.gz",
+        (Os::Linux, Architecture::X8664) => "rust-analyzer-x86_64-unknown-linux-gnu.gz",
+        _ => return Err("Unsupported platform".to_string()),
+    };
+
+    let asset = release.assets
+        .iter()
+        .find(|a| a.name == asset_name)
+        .ok_or("Asset not found")?;
+
+    let server_path = format!("rust-analyzer-{}", release.version);
+    zed::download_file(
+        &asset.download_url,
+        &server_path,
+        zed::DownloadedFileType::Gzip,
+    )?;
+    zed::make_file_executable(&server_path)?;
+
+    Ok(server_path)
+}
+```
+
+### Install via npm
+
+```rust
+fn install_node_server(
+    language_server_id: &LanguageServerId,
+) -> Result<String> {
+    const PACKAGE: &str = "typescript-language-server";
+    const SERVER_PATH: &str = "node_modules/.bin/typescript-language-server";
+
+    zed::set_language_server_installation_status(
+        language_server_id,
+        &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+    );
+
+    let version = zed::npm_package_latest_version(PACKAGE)?;
+
+    // Check if already installed
+    if let Some(installed) = zed::npm_package_installed_version(PACKAGE)? {
+        if installed == version {
+            return Ok(SERVER_PATH.to_string());
+        }
+    }
+
+    zed::set_language_server_installation_status(
+        language_server_id,
+        &zed::LanguageServerInstallationStatus::Downloading,
+    );
+
+    zed::npm_install_package(PACKAGE, &version)?;
+    Ok(SERVER_PATH.to_string())
+}
+```
+
+## Complete Example: Rust Analyzer
+
+Here's a complete example integrating rust-analyzer:
+
+```rust
+use zed_extension_api::{self as zed, LanguageServerId, Result};
+use std::fs;
+
+struct RustExtension {
+    cached_server_path: Option<String>,
+}
+
+impl zed::Extension for RustExtension {
+    fn new() -> Self {
+        Self {
+            cached_server_path: None,
+        }
+    }
+
+    fn language_server_command(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<zed::Command> {
+        // Check if rust-analyzer is in PATH
+        if let Some(path) = worktree.which("rust-analyzer") {
+            return Ok(zed::Command {
+                command: path,
+                args: vec![],
+                env: Default::default(),
+            });
+        }
+
+        // Use cached path if available
+        if let Some(path) = &self.cached_server_path {
+            if fs::metadata(path).is_ok() {
+                return Ok(zed::Command {
+                    command: path.clone(),
+                    args: vec![],
+                    env: Default::default(),
+                });
+            }
+        }
+
+        // Download from GitHub
+        let path = self.download_server(language_server_id)?;
+        self.cached_server_path = Some(path.clone());
+
+        Ok(zed::Command {
+            command: path,
+            args: vec![],
+            env: Default::default(),
+        })
+    }
+
+    fn language_server_initialization_options(
+        &mut self,
+        _server_id: &LanguageServerId,
+        _worktree: &zed::Worktree,
+    ) -> Result<Option<zed::serde_json::Value>> {
+        Ok(Some(zed::serde_json::json!({
+            "checkOnSave": {
+                "command": "clippy"
+            },
+            "inlayHints": {
+                "parameterHints": { "enable": true },
+                "typeHints": { "enable": true }
+            }
+        })))
+    }
+
+    fn language_server_workspace_configuration(
+        &mut self,
+        server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<Option<zed::serde_json::Value>> {
+        let settings = zed::settings::LspSettings::for_worktree(
+            server_id.as_ref(),
+            worktree,
+        )?;
+        Ok(settings.settings)
+    }
+}
+
+impl RustExtension {
+    fn download_server(
+        &self,
+        language_server_id: &LanguageServerId,
+    ) -> Result<String> {
+        use zed::{current_platform, latest_github_release, GithubReleaseOptions, Os, Architecture};
+
+        zed::set_language_server_installation_status(
+            language_server_id,
+            &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+        );
+
+        let release = latest_github_release(
+            "rust-lang/rust-analyzer",
+            GithubReleaseOptions {
+                require_assets: true,
+                pre_release: false,
+            },
+        )?;
+
+        let platform = current_platform();
+        let asset_name = match (platform.os, platform.arch) {
+            (Os::Mac, Architecture::Aarch64) => "rust-analyzer-aarch64-apple-darwin.gz",
+            (Os::Mac, Architecture::X8664) => "rust-analyzer-x86_64-apple-darwin.gz",
+            (Os::Linux, Architecture::X8664) => "rust-analyzer-x86_64-unknown-linux-gnu.gz",
+            (Os::Windows, Architecture::X8664) => "rust-analyzer-x86_64-pc-windows-msvc.gz",
+            _ => return Err("Unsupported platform".to_string()),
+        };
+
+        let asset = release
+            .assets
+            .iter()
+            .find(|a| a.name == asset_name)
+            .ok_or_else(|| format!("No asset found for {}", asset_name))?;
+
+        zed::set_language_server_installation_status(
+            language_server_id,
+            &zed::LanguageServerInstallationStatus::Downloading,
+        );
+
+        let server_path = format!("rust-analyzer-{}", release.version);
+        zed::download_file(
+            &asset.download_url,
+            &server_path,
+            zed::DownloadedFileType::Gzip,
+        )?;
+        zed::make_file_executable(&server_path)?;
+
+        Ok(server_path)
+    }
+}
+
+zed::register_extension!(RustExtension);
+```
+
+## Best Practices
+
+<Tip>
+  **Respect user installations**: Always check `worktree.which()` before downloading your own copy.
+</Tip>
+
+<Tip>
+  **Cache server paths**: Store the path after first installation to avoid repeated lookups.
+</Tip>
+
+<Tip>
+  **Provide installation feedback**: Use `set_language_server_installation_status` to show progress in the UI.
+</Tip>
+
+<Warning>
+  **Don't panic on errors**: Return `Result` types and let Glass handle error reporting gracefully.
+</Warning>
+
+<Tip>
+  **Support user configuration**: Always check for user-provided LSP settings and merge them with defaults.
+</Tip>
+
+## Troubleshooting
+
+### Server Won't Start
+
+1. Check that the command path is correct and the file exists
+2. Verify the server binary has execute permissions (`make_file_executable`)
+3. Ensure `--stdio` or equivalent flag is passed for standard I/O communication
+4. Check environment variables are set correctly
+
+### Configuration Not Applied
+
+1. Verify you're implementing both `initialization_options` and `workspace_configuration`
+2. Check the JSON structure matches what the language server expects
+3. Look at the language server's documentation for correct setting names
+
+### Completions Not Showing
+
+Most completions work automatically with LSP. If you need custom labels:
+
+1. Implement `label_for_completion` to customize display
+2. Ensure the `filter_range` includes the text users will type
+3. Use appropriate highlight names that match your language's Tree-sitter grammar
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Commands API" icon="terminal" href="/extensions/api/commands">
+    Learn about executing commands and managing processes
+  </Card>
+  <Card title="Configuration" icon="gear" href="/extensions/api/configuration">
+    Access user settings and extension configuration
+  </Card>
+</CardGroup>

@@ -1,0 +1,665 @@
+---
+title: Keybindings Reference
+description: Complete reference for all Glass code editor keybindings
+---
+
+This page provides a comprehensive reference for all default keybindings in Glass. You can customize keybindings in your keymap file (`Ctrl+K Ctrl+S` or `Cmd+K Cmd+S`).
+
+<Note>
+  Glass uses different keybindings for macOS, Linux, and Windows. This reference shows both macOS (Cmd) and Linux/Windows (Ctrl) variants where they differ.
+</Note>
+
+## Base Keymaps
+
+Glass supports multiple base keymap configurations:
+
+- **VSCode** (default): Keybindings matching Visual Studio Code
+- **Atom**: Keybindings matching Atom editor
+- **JetBrains**: Keybindings matching JetBrains IDEs
+- **Sublime Text**: Keybindings matching Sublime Text
+- **TextMate**: Keybindings matching TextMate
+- **Emacs**: Keybindings matching Emacs
+
+Change the base keymap in settings:
+
+```json
+{
+  "base_keymap": "VSCode"
+}
+```
+
+## Global Actions
+
+### Application
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+,` | Open Settings | Open settings UI |
+    | `Cmd+Alt+,` | Open Settings File | Open settings JSON |
+    | `Cmd+Q` | Quit | Quit application |
+    | `Cmd+H` | Hide | Hide application |
+    | `Alt+Cmd+H` | Hide Others | Hide other applications |
+    | `Cmd+M` | Minimize | Minimize window |
+    | `Fn+F` or `Ctrl+Cmd+F` | Toggle Full Screen | Toggle full screen mode |
+    | `Cmd+Shift+W` | Close Window | Close current window |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+,` | Open Settings | Open settings UI |
+    | `Ctrl+Alt+,` | Open Settings File | Open settings JSON |
+    | `Ctrl+Q` | Quit | Quit application |
+    | `F11` | Toggle Full Screen | Toggle full screen mode |
+    | `Ctrl+Shift+W` | Close Window | Close current window |
+  </Tab>
+</Tabs>
+
+### Font Size
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+=` or `Cmd++` | Increase Buffer Font | Increase editor font size |
+    | `Cmd+-` | Decrease Buffer Font | Decrease editor font size |
+    | `Cmd+0` | Reset Buffer Font | Reset editor font to default |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+=` or `Ctrl++` | Increase Buffer Font | Increase editor font size |
+    | `Ctrl+-` | Decrease Buffer Font | Decrease editor font size |
+    | `Ctrl+0` | Reset Buffer Font | Reset editor font to default |
+  </Tab>
+</Tabs>
+
+## File Operations
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+N` | New File | Create new file |
+    | `Cmd+O` | Open | Open file or folder |
+    | `Cmd+S` | Save | Save current file |
+    | `Cmd+Shift+S` | Save As | Save file with new name |
+    | `Cmd+Alt+S` | Save All | Save all open files |
+    | `Cmd+K S` | Save Without Format | Save without formatting |
+    | `Cmd+W` | Close Active Item | Close current tab |
+    | `Cmd+Shift+T` | Reopen Closed Item | Reopen last closed tab |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+N` | New File | Create new file |
+    | `Ctrl+O` | Open Files | Open files |
+    | `Ctrl+K Ctrl+O` | Open Folder | Open folder |
+    | `Ctrl+S` | Save | Save current file |
+    | `Ctrl+Shift+S` | Save As | Save file with new name |
+    | `Ctrl+Alt+S` | Save All | Save all open files |
+    | `Ctrl+K S` | Save Without Format | Save without formatting |
+    | `Ctrl+W` or `Ctrl+F4` | Close Active Item | Close current tab |
+    | `Ctrl+Shift+T` | Reopen Closed Item | Reopen last closed tab |
+  </Tab>
+</Tabs>
+
+## Navigation
+
+### File Finder
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+P` | File Finder | Quick file search |
+    | `Cmd+Shift+O` | Go to Symbol | Go to symbol in workspace |
+    | `Cmd+T` | Go to Type | Go to type definition |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+P` | File Finder | Quick file search |
+    | `Ctrl+Shift+O` | Recent Projects | Open recent projects |
+  </Tab>
+</Tabs>
+
+### Panes and Tabs
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+1-9` | Activate Pane | Switch to pane 1-9 |
+    | `Ctrl+1-9` | Activate Tab | Switch to tab 1-9 in pane |
+    | `Ctrl+0` | Activate Last Tab | Switch to last tab |
+    | `Cmd+{` or `Alt+Cmd+Left` | Previous Tab | Go to previous tab |
+    | `Cmd+}` or `Alt+Cmd+Right` | Next Tab | Go to next tab |
+    | `Ctrl+Tab` | Tab Switcher | Open tab switcher |
+    | `Ctrl+Shift+Tab` | Tab Switcher (Reverse) | Open tab switcher (last first) |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Alt+1-9` | Activate Pane | Switch to pane 1-9 |
+    | `Alt+1-9` | Activate Tab | Switch to tab 1-9 (in pane context) |
+    | `Alt+0` | Activate Last Tab | Switch to last tab |
+    | `Ctrl+PageUp` | Previous Tab | Go to previous tab |
+    | `Ctrl+PageDown` | Next Tab | Go to next tab |
+    | `Ctrl+Tab` | Tab Switcher | Open tab switcher |
+    | `Ctrl+Shift+Tab` | Tab Switcher (Reverse) | Open tab switcher (last first) |
+  </Tab>
+</Tabs>
+
+### Pane Splitting
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+\\` | Split Right | Split pane to the right |
+    | `Cmd+K Up` | Split Up | Split pane upward |
+    | `Cmd+K Down` | Split Down | Split pane downward |
+    | `Cmd+K Left` | Split Left | Split pane to the left |
+    | `Cmd+K Right` | Split Right | Split pane to the right |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+\\` | Split Right | Split pane to the right |
+    | `Ctrl+K Up` | Split Up | Split pane upward |
+    | `Ctrl+K Down` | Split Down | Split pane downward |
+    | `Ctrl+K Left` | Split Left | Split pane to the left |
+    | `Ctrl+K Right` | Split Right | Split pane to the right |
+  </Tab>
+</Tabs>
+
+## Editor
+
+### Text Editing
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+X` | Cut | Cut selection |
+    | `Cmd+C` | Copy | Copy selection |
+    | `Cmd+V` | Paste | Paste from clipboard |
+    | `Cmd+Z` | Undo | Undo last change |
+    | `Cmd+Shift+Z` | Redo | Redo last undone change |
+    | `Cmd+/` | Toggle Comments | Toggle line/block comments |
+    | `Cmd+]` | Indent | Indent selected lines |
+    | `Cmd+[` | Outdent | Outdent selected lines |
+    | `Cmd+Enter` | Newline Below | Insert line below |
+    | `Cmd+Shift+Enter` | Newline Above | Insert line above |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+X` or `Shift+Delete` | Cut | Cut selection |
+    | `Ctrl+C` or `Ctrl+Insert` | Copy | Copy selection |
+    | `Ctrl+V` or `Shift+Insert` | Paste | Paste from clipboard |
+    | `Ctrl+Z` | Undo | Undo last change |
+    | `Ctrl+Y` or `Ctrl+Shift+Z` | Redo | Redo last undone change |
+    | `Ctrl+/` | Toggle Comments | Toggle line/block comments |
+    | `Ctrl+]` | Indent | Indent selected lines |
+    | `Ctrl+[` | Outdent | Outdent selected lines |
+    | `Ctrl+Enter` | Newline Below | Insert line below |
+    | `Ctrl+Shift+Enter` | Newline Above | Insert line above |
+  </Tab>
+</Tabs>
+
+### Cursor Movement
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+Left` or `Ctrl+A` | Line Start | Move to beginning of line |
+    | `Cmd+Right` or `Ctrl+E` | Line End | Move to end of line |
+    | `Cmd+Up` | File Start | Move to beginning of file |
+    | `Cmd+Down` | File End | Move to end of file |
+    | `Alt+Left` | Previous Word | Move to previous word |
+    | `Alt+Right` | Next Word | Move to next word |
+    | `Ctrl+L` | Center Cursor | Scroll to center cursor |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Home` | Line Start | Move to beginning of line |
+    | `End` | Line End | Move to end of line |
+    | `Ctrl+Home` | File Start | Move to beginning of file |
+    | `Ctrl+End` | File End | Move to end of file |
+    | `Ctrl+Left` | Previous Word | Move to previous word |
+    | `Ctrl+Right` | Next Word | Move to next word |
+  </Tab>
+</Tabs>
+
+### Selection
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+A` | Select All | Select entire file |
+    | `Cmd+L` | Select Line | Select current line |
+    | `Cmd+D` | Select Next | Select next occurrence |
+    | `Cmd+K Cmd+D` | Select Next (Skip) | Move selection to next occurrence |
+    | `Cmd+Shift+L` | Select All Matches | Select all occurrences |
+    | `Cmd+Ctrl+Left` | Select Smaller Syntax Node | Shrink selection |
+    | `Cmd+Ctrl+Right` | Select Larger Syntax Node | Expand selection |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+A` | Select All | Select entire file |
+    | `Ctrl+L` | Select Line | Select current line |
+    | `Ctrl+D` | Select Next | Select next occurrence |
+    | `Ctrl+K Ctrl+D` | Select Next (Skip) | Move selection to next occurrence |
+    | `Ctrl+Shift+L` | Select All Matches | Select all occurrences |
+    | `Alt+Shift+Left` | Select Smaller Syntax Node | Shrink selection |
+    | `Alt+Shift+Right` | Select Larger Syntax Node | Expand selection |
+  </Tab>
+</Tabs>
+
+### Multiple Cursors
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+Ctrl+P` or `Cmd+Alt+Up` | Add Cursor Above | Add cursor on line above |
+    | `Cmd+Ctrl+N` or `Cmd+Alt+Down` | Add Cursor Below | Add cursor on line below |
+    | `Cmd+Click` | Add Cursor at Click | Add cursor at mouse position |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Shift+Alt+Up` | Add Cursor Above | Add cursor on line above |
+    | `Shift+Alt+Down` | Add Cursor Below | Add cursor on line below |
+    | `Alt+Click` | Add Cursor at Click | Add cursor at mouse position |
+  </Tab>
+</Tabs>
+
+### Line Manipulation
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+Shift+K` | Delete Line | Delete current line |
+    | `Alt+Up` | Move Line Up | Move line up |
+    | `Alt+Down` | Move Line Down | Move line down |
+    | `Alt+Shift+Up` | Duplicate Line Up | Duplicate line upward |
+    | `Alt+Shift+Down` | Duplicate Line Down | Duplicate line downward |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+Shift+K` | Delete Line | Delete current line |
+    | `Alt+Up` | Move Line Up | Move line up |
+    | `Alt+Down` | Move Line Down | Move line down |
+    | `Ctrl+Alt+Shift+Up` | Duplicate Line Up | Duplicate line upward |
+    | `Ctrl+Alt+Shift+Down` | Duplicate Line Down | Duplicate line downward |
+  </Tab>
+</Tabs>
+
+### Code Navigation
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `F12` | Go to Definition | Go to symbol definition |
+    | `Alt+F12` | Go to Definition (Split) | Open definition in split |
+    | `Cmd+F12` | Go to Type Definition | Go to type definition |
+    | `Shift+F12` | Go to Implementation | Go to implementation |
+    | `Alt+Shift+F12` | Find All References | Find all references |
+    | `F2` | Rename | Rename symbol |
+    | `Cmd+K Cmd+I` | Hover | Show hover information |
+    | `Cmd+K Cmd+B` | Blame Hover | Show git blame |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `F12` | Go to Definition | Go to symbol definition |
+    | `Alt+F12` | Go to Definition (Split) | Open definition in split |
+    | `Ctrl+F12` | Go to Type Definition | Go to type definition |
+    | `Shift+F12` | Go to Implementation | Go to implementation |
+    | `Alt+Shift+F12` | Find All References | Find all references |
+    | `F2` | Rename | Rename symbol |
+    | `Ctrl+K Ctrl+I` | Hover | Show hover information |
+    | `Ctrl+K Ctrl+B` | Blame Hover | Show git blame |
+  </Tab>
+</Tabs>
+
+### Code Actions
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+.` | Toggle Code Actions | Show code actions menu |
+    | `Cmd+Shift+I` | Format Document | Format file |
+    | `Alt+Shift+O` | Organize Imports | Organize imports |
+    | `Ctrl+Space` | Show Completions | Show completion suggestions |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+.` | Toggle Code Actions | Show code actions menu |
+    | `Ctrl+Shift+I` | Format Document | Format file |
+    | `Alt+Shift+O` | Organize Imports | Organize imports |
+    | `Ctrl+Space` | Show Completions | Show completion suggestions |
+  </Tab>
+</Tabs>
+
+### Folding
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+Alt+[` | Fold | Fold current section |
+    | `Cmd+Alt+]` | Unfold | Unfold current section |
+    | `Cmd+K Cmd+L` | Toggle Fold | Toggle fold at cursor |
+    | `Cmd+K Cmd+0` | Fold All | Fold all sections |
+    | `Cmd+K Cmd+J` | Unfold All | Unfold all sections |
+    | `Cmd+K Cmd+1-9` | Fold at Level | Fold at indentation level |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+{` | Fold | Fold current section |
+    | `Ctrl+}` | Unfold | Unfold current section |
+    | `Ctrl+K Ctrl+L` | Toggle Fold | Toggle fold at cursor |
+    | `Ctrl+K Ctrl+0` | Fold All | Fold all sections |
+    | `Ctrl+K Ctrl+J` | Unfold All | Unfold all sections |
+    | `Ctrl+K Ctrl+1-9` | Fold at Level | Fold at indentation level |
+  </Tab>
+</Tabs>
+
+## Search and Replace
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+F` | Buffer Search | Search in current file |
+    | `Cmd+Alt+F` | Buffer Search (Replace) | Search and replace in file |
+    | `Cmd+G` | Select Next Match | Go to next search result |
+    | `Cmd+Shift+G` | Select Previous Match | Go to previous result |
+    | `Cmd+Shift+F` | Project Search | Search across project |
+    | `Cmd+Shift+H` | Project Search (Replace) | Search and replace in project |
+    | `Alt+Enter` | Select All Matches | Select all search matches |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+F` | Buffer Search | Search in current file |
+    | `Ctrl+H` | Buffer Search (Replace) | Search and replace in file |
+    | `F3` or `Ctrl+G` | Select Next Match | Go to next search result |
+    | `Shift+F3` or `Ctrl+Shift+G` | Select Previous Match | Go to previous result |
+    | `Ctrl+Shift+F` | Project Search | Search across project |
+    | `Ctrl+Shift+H` | Project Search (Replace) | Search and replace in project |
+    | `Alt+Enter` | Select All Matches | Select all search matches |
+  </Tab>
+</Tabs>
+
+## Panels and Docks
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+B` | Toggle Left Dock | Toggle project panel |
+    | `Cmd+R` or `Cmd+Alt+B` | Toggle Right Dock | Toggle agent panel |
+    | `Cmd+J` | Switch to Terminal Mode | Focus terminal |
+    | `Cmd+E` | Switch to Editor Mode | Focus editor |
+    | `Cmd+Shift+E` | Toggle Project Panel | Focus project panel |
+    | `Cmd+Shift+M` | Toggle Diagnostics | Open diagnostics panel |
+    | `Ctrl+Shift+G` | Toggle Git Panel | Focus git panel |
+    | `Cmd+?` | Toggle Agent | Focus agent panel |
+    | `Cmd+Shift+P` | Command Palette | Open command palette |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+B` | Toggle Left Dock | Toggle project panel |
+    | `Ctrl+Alt+B` | Toggle Right Dock | Toggle agent panel |
+    | `Ctrl+J` | Switch to Terminal Mode | Focus terminal |
+    | `Ctrl+E` | Switch to Editor Mode | Focus editor |
+    | `Ctrl+Shift+E` | Toggle Project Panel | Focus project panel |
+    | `Ctrl+Shift+M` | Toggle Diagnostics | Open diagnostics panel |
+    | `Ctrl+Shift+G` | Toggle Git Panel | Focus git panel |
+    | `Ctrl+?` | Toggle Agent | Focus agent panel |
+    | `F1` or `Ctrl+Shift+P` | Command Palette | Open command palette |
+  </Tab>
+</Tabs>
+
+## Terminal
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+\`` | Toggle Terminal | Show/hide terminal panel |
+    | `Ctrl+~` | New Terminal | Create new terminal |
+    | `Cmd+K` | Clear Terminal | Clear terminal output |
+    | `Cmd+C` | Copy | Copy selected text |
+    | `Cmd+V` | Paste | Paste into terminal |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+\`` | Toggle Terminal | Show/hide terminal panel |
+    | `Ctrl+~` | New Terminal | Create new terminal |
+    | `Ctrl+Shift+L` | Clear Terminal | Clear terminal output |
+    | `Ctrl+Shift+C` | Copy | Copy selected text |
+    | `Ctrl+Shift+V` | Paste | Paste into terminal |
+  </Tab>
+</Tabs>
+
+## Git
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+Alt+G B` | Git Blame | Show git blame |
+    | `Cmd+Alt+G M` | Open Modified Files | Open all modified files |
+    | `Cmd+Alt+G R` | Review Diff | Review git diff |
+    | `Cmd+Y` | Stage and Next | Stage hunk and move to next |
+    | `Cmd+Shift+Y` | Unstage and Next | Unstage hunk and move to next |
+    | `Cmd+Alt+Y` | Toggle Staged | Toggle staging for hunk |
+    | `Cmd+Alt+Z` | Restore | Restore file to HEAD |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Alt+G B` | Git Blame | Show git blame |
+    | `Alt+G M` | Open Modified Files | Open all modified files |
+    | `Alt+G R` | Review Diff | Review git diff |
+    | `Alt+Y` | Stage and Next | Stage hunk and move to next |
+    | `Alt+Shift+Y` | Unstage and Next | Unstage hunk and move to next |
+    | `Ctrl+Alt+Y` | Toggle Staged | Toggle staging for hunk |
+    | `Ctrl+K Ctrl+R` | Restore | Restore file to HEAD |
+  </Tab>
+</Tabs>
+
+## Agent (AI Assistant)
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+Enter` | Inline Assist | Trigger inline AI assistance |
+    | `Cmd+>` | Add Selection to Thread | Add selection to agent thread |
+    | `Cmd+<` | Insert from Agent | Insert agent response to editor |
+    | `Cmd+N` | New Thread | Create new agent thread |
+    | `Cmd+Alt+Y` | Keep (Agent Diff) | Accept agent suggestion |
+    | `Cmd+Alt+Z` | Reject (Agent Diff) | Reject agent suggestion |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Ctrl+Enter` | Inline Assist | Trigger inline AI assistance |
+    | `Ctrl+>` | Add Selection to Thread | Add selection to agent thread |
+    | `Ctrl+<` | Insert from Agent | Insert agent response to editor |
+    | `Ctrl+N` | New Thread | Create new agent thread |
+    | `Ctrl+Alt+Y` | Keep (Agent Diff) | Accept agent suggestion |
+    | `Ctrl+Alt+Z` | Reject (Agent Diff) | Reject agent suggestion |
+  </Tab>
+</Tabs>
+
+## Diagnostics
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `F8` | Go to Next Diagnostic | Jump to next diagnostic |
+    | `Shift+F8` | Go to Previous Diagnostic | Jump to previous diagnostic |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `F8` | Go to Next Diagnostic | Jump to next diagnostic |
+    | `Shift+F8` | Go to Previous Diagnostic | Jump to previous diagnostic |
+  </Tab>
+</Tabs>
+
+## Debugger
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `F4` | Start Debugging | Start debug session |
+    | `F5` | Continue/Rerun | Continue or rerun debugger |
+    | `Shift+F5` | Stop Debugging | Stop debug session |
+    | `F6` | Pause | Pause execution |
+    | `F7` | Step Over | Step over statement |
+    | `Ctrl+F11` | Step Into | Step into function |
+    | `Shift+F11` | Step Out | Step out of function |
+    | `F9` | Toggle Breakpoint | Toggle breakpoint at line |
+    | `Shift+F9` | Edit Log Breakpoint | Edit log breakpoint |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `F4` | Start Debugging | Start debug session |
+    | `F5` | Continue/Rerun | Continue or rerun debugger |
+    | `Shift+F5` | Stop Debugging | Stop debug session |
+    | `F6` | Pause | Pause execution |
+    | `F7` | Step Over | Step over statement |
+    | `Ctrl+F11` | Step Into | Step into function |
+    | `Shift+F11` | Step Out | Step out of function |
+    | `F9` | Toggle Breakpoint | Toggle breakpoint at line |
+    | `Shift+F9` | Edit Log Breakpoint | Edit log breakpoint |
+  </Tab>
+</Tabs>
+
+## Tasks
+
+<Tabs>
+  <Tab title="macOS">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Cmd+Shift+R` | Spawn Task | Run a task |
+    | `Cmd+Alt+R` | Rerun Task | Rerun last task |
+  </Tab>
+  <Tab title="Linux/Windows">
+    | Key | Action | Description |
+    |-----|--------|-------------|
+    | `Alt+Shift+T` | Spawn Task | Run a task |
+    | `Alt+T` or `Ctrl+Alt+R` | Rerun Task | Rerun last task |
+  </Tab>
+</Tabs>
+
+## Customizing Keybindings
+
+To customize keybindings, open your keymap file:
+
+<Tabs>
+  <Tab title="macOS">
+    Press `Cmd+K Cmd+S` or use `Cmd+Shift+P` → "zed: open keymap"
+  </Tab>
+  <Tab title="Linux/Windows">
+    Press `Ctrl+K Ctrl+S` or use `F1` → "zed: open keymap"
+  </Tab>
+</Tabs>
+
+Add custom bindings in JSON format:
+
+```json
+[
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl+shift+d": "editor::DuplicateLine",
+      "alt+/": "editor::ToggleComments"
+    }
+  }
+]
+```
+
+<Note>
+  Context determines where the keybinding is active. Common contexts include: `Editor`, `Workspace`, `Terminal`, `ProjectPanel`, `Pane`.
+</Note>
+
+## Context-Specific Bindings
+
+Some keybindings only work in specific contexts:
+
+### Editor Context
+
+Bindings that only work when an editor has focus:
+- Text editing operations
+- Cursor movement
+- Code navigation
+- Folding
+
+### Terminal Context
+
+Bindings that only work in the terminal:
+- Terminal-specific copy/paste
+- Shell interactions
+- Terminal navigation
+
+### Panel Contexts
+
+Bindings specific to panels:
+- `ProjectPanel`: File tree navigation
+- `GitPanel`: Git operations
+- `AgentPanel`: AI assistant interactions
+
+## Keybinding Modifiers
+
+<Accordion title="Modifier Keys">
+  <Tabs>
+    <Tab title="macOS">
+      - `Cmd`: Command key (⌘)
+      - `Ctrl`: Control key
+      - `Alt` or `Option`: Option key (⌥)
+      - `Shift`: Shift key
+    </Tab>
+    <Tab title="Linux/Windows">
+      - `Ctrl`: Control key
+      - `Alt`: Alt key
+      - `Shift`: Shift key
+      - `Super`: Windows/Meta key (Linux)
+    </Tab>
+  </Tabs>
+</Accordion>
+
+## Tips
+
+<Accordion title="Keybinding Best Practices">
+  1. **Avoid conflicts**: Check existing keybindings before adding new ones
+  2. **Use contexts**: Make keybindings context-specific when possible
+  3. **Follow conventions**: Use platform-appropriate modifiers (Cmd on macOS, Ctrl on Linux/Windows)
+  4. **Document custom bindings**: Add comments to your keymap file
+  5. **Test thoroughly**: Ensure custom bindings don't interfere with essential commands
+</Accordion>

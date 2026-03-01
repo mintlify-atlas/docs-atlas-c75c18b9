@@ -1,0 +1,581 @@
+---
+title: Git Integration
+description: Manage your Git workflow with Glass's integrated Git features including staging, committing, and viewing diffs
+---
+
+Glass provides comprehensive Git integration, allowing you to manage your version control workflow without leaving the editor. From viewing diffs to creating pull requests, Glass has you covered.
+
+## Git Panel
+
+The Git Panel is your central hub for Git operations in Glass.
+
+### Panel Overview
+
+```rust
+// From crates/git_ui/src/git_ui.rs
+pub fn init(cx: &mut App) {
+    editor::set_blame_renderer(blame_ui::GitBlameRenderer, cx);
+    commit_view::init(cx);
+    // Panel registration and actions
+}
+```
+
+Key features:
+- **File status** - View modified, staged, and untracked files
+- **Diff viewing** - See changes inline or in dedicated views
+- **Staging** - Stage and unstage changes
+- **Commit history** - Browse commit log
+- **Branch management** - Switch, create, and delete branches
+
+<Note>
+The Git Panel automatically updates when you make changes to your files, keeping your version control state always visible.
+</Note>
+
+## File Status and Staging
+
+Glass displays file status using Git's status tracking.
+
+### Status Display
+
+```rust
+// From crates/git/src/status.rs
+pub enum StatusCode {
+    // File status indicators
+}
+
+pub enum UnmergedStatusCode {
+    // Merge conflict states
+}
+
+pub struct FileStatus {
+    // File status information
+}
+```
+
+File status indicators:
+- **Modified** - Changes not yet staged
+- **Staged** - Changes ready to commit
+- **Untracked** - New files not in Git
+- **Deleted** - Removed files
+- **Renamed** - Moved or renamed files
+- **Conflicted** - Merge conflicts
+
+### Staging Changes
+
+Stage changes directly from the editor:
+- Click to stage individual files
+- Stage hunks of changes within a file
+- Stage individual lines for precise commits
+- Unstage previously staged changes
+
+<Tip>
+Use partial staging to create focused, logical commits even when you have multiple unrelated changes in the same file.
+</Tip>
+
+## Viewing Diffs
+
+Glass provides multiple ways to view code changes.
+
+### Inline Diff View
+
+```rust
+// From crates/git_ui/src/file_diff_view.rs
+pub mod file_diff_view;
+```
+
+View diffs directly in your editor:
+- **Side-by-side** - Compare old and new versions
+- **Unified diff** - Traditional diff format  
+- **Inline changes** - Highlighted within the editor
+
+### Text Diff View
+
+```rust
+// From crates/git_ui/src/text_diff_view.rs
+pub struct TextDiffView;
+```
+
+Dedicated diff viewer features:
+- **Syntax highlighting** in both versions
+- **Word-level diffs** for precise change identification
+- **Navigate between hunks** quickly
+- **Fold unchanged regions** for focus
+
+### Multi Diff View
+
+```rust
+// From crates/git_ui/src/multi_diff_view.rs  
+pub mod multi_diff_view;
+```
+
+View multiple file diffs simultaneously:
+- **Batch review** of related changes
+- **Selectively stage** from multiple files
+- **Compare across commits**
+
+<Tabs>
+  <Tab title="Working Changes">
+    View unstaged changes in your working directory:
+
+    ```rust
+    // From crates/editor/src/actions.rs
+    pub struct DiffClipboardWithSelectionData {
+        pub clipboard_text: String,
+        pub editor: Entity<Editor>,
+    }
+    ```
+  </Tab>
+
+  <Tab title="Staged Changes">
+    Review what will be included in your next commit by viewing staged changes.
+  </Tab>
+
+  <Tab title="Commit Diff">
+    View the changes in any commit from history.
+  </Tab>
+</Tabs>
+
+## Git Blame
+
+See who last modified each line of code and when.
+
+### Blame UI
+
+```rust
+// From crates/git_ui/src/blame_ui.rs
+pub struct GitBlameRenderer;
+
+// Editor integration
+pub use git::blame::BlameRenderer;
+pub use git::blame::{GitBlame, GlobalBlameRenderer};
+```
+
+Blame information shows:
+- **Author** of each change
+- **Commit hash** for the change
+- **Timestamp** when changed
+- **Commit message** describing why
+
+### Blame Entry Details
+
+```rust
+// From crates/git/src/repository.rs
+pub use git::blame::BlameEntry;
+pub use git::commit::ParsedCommitMessage;
+```
+
+Click on blame information to:
+- View full commit details
+- Open commit in history
+- See all files in that commit
+- Navigate to diff view
+
+<Note>
+Git blame updates in real-time as you navigate through files, providing immediate context about code authorship.
+</Note>
+
+## Committing Changes
+
+Create commits with an integrated commit modal.
+
+### Commit Modal
+
+```rust
+// From crates/git_ui/src/commit_modal.rs
+use commit_modal::CommitModal;
+
+impl CommitModal {
+    pub fn register(workspace);
+}
+```
+
+<Steps>
+  <Step title="Stage Changes">
+    Select the changes you want to include in your commit by staging files or hunks.
+  </Step>
+
+  <Step title="Write Commit Message">
+    Open the commit modal to write your message. Glass uses a template from `commit_message_prompt.txt` to guide you.
+  </Step>
+
+  <Step title="Review and Commit">
+    Review your staged changes one final time, then commit.
+  </Step>
+</Steps>
+
+### Commit View
+
+```rust
+// From crates/git_ui/src/commit_view.rs
+pub mod commit_view;
+
+pub fn init(cx: &mut App);
+```
+
+View and navigate commit history:
+- **Chronological log** of commits
+- **Branch visualization** showing relationships
+- **Commit details** with full diffs
+- **Search commits** by message, author, or hash
+
+## Branch Management
+
+Work with Git branches efficiently.
+
+### Branch Picker
+
+```rust
+// From crates/git_ui/src/branch_picker.rs
+pub mod branch_picker;
+```
+
+Branch operations:
+- **Switch branches** quickly with fuzzy search
+- **Create new branches** from current or specific commits
+- **View branch list** with last commit info
+- **Track remote branches** and their status
+
+### Branch Information
+
+```rust
+// From crates/git/src/repository.rs
+pub use git::repository::{
+    Branch,
+    Upstream,
+    UpstreamTracking,
+    UpstreamTrackingStatus,
+};
+```
+
+Glass displays:
+- **Current branch** name
+- **Upstream tracking** status
+- **Ahead/behind** commit counts
+- **Divergence** warnings
+
+<Warning>
+Be cautious when switching branches with uncommitted changes. Glass will warn you about potential conflicts.
+</Warning>
+
+## Remote Operations
+
+Interact with remote repositories.
+
+### Push and Pull
+
+```rust
+// From crates/git_ui/src/git_ui.rs
+git::Push,
+git::PushTo,
+git::ForcePush,
+git::Pull,
+git::PullRebase,
+git::Fetch,
+git::FetchFrom,
+```
+
+<Tabs>
+  <Tab title="Push">
+    Push your commits to the remote repository:
+
+    ```rust
+    workspace.register_action(|workspace, _: &git::Push, window, cx| {
+        panel.update(cx, |panel, cx| {
+            panel.push(false, false, window, cx);
+        });
+    });
+    ```
+
+    - **Push** - Standard push to tracked branch
+    - **Push To** - Select target remote and branch
+    - **Force Push** - Overwrite remote history (use carefully!)
+  </Tab>
+
+  <Tab title="Pull">
+    Get changes from the remote:
+
+    ```rust
+    git::Pull,
+    git::PullRebase,
+    ```
+
+    - **Pull** - Merge remote changes
+    - **Pull Rebase** - Rebase local commits on top of remote
+  </Tab>
+
+  <Tab title="Fetch">
+    Download remote changes without merging:
+
+    ```rust
+    git::Fetch,
+    git::FetchFrom,
+    ```
+
+    - **Fetch** - Get all remote updates
+    - **Fetch From** - Fetch from specific remote
+  </Tab>
+</Tabs>
+
+### Remote Output
+
+```rust
+// From crates/git_ui/src/remote_output.rs
+pub(crate) mod remote_output;
+```
+
+Glass shows detailed output for remote operations:
+- **Progress indicators** for long operations
+- **Error messages** with helpful context
+- **Authentication prompts** when needed
+- **Transfer statistics** for push/pull
+
+## Stash Management
+
+Temporarily save and restore changes.
+
+### Stash Operations
+
+```rust
+// From crates/git/src/stash.rs
+use crate::stash::GitStash;
+
+// Actions
+git::StashAll,
+git::StashPop,
+```
+
+<Steps>
+  <Step title="Stash Changes">
+    Save all uncommitted changes to the stash:
+
+    ```rust
+    workspace.register_action(|workspace, action: &git::StashAll, window, cx| {
+        panel.update(cx, |panel, cx| {
+            panel.stash_all(action, window, cx);
+        });
+    });
+    ```
+  </Step>
+
+  <Step title="View Stashes">
+    Browse your stash list with the stash picker:
+
+    ```rust
+    // From crates/git_ui/src/stash_picker.rs
+    pub mod stash_picker;
+    ```
+  </Step>
+
+  <Step title="Apply Stash">
+    Restore stashed changes back to your working directory with `StashPop`.
+  </Step>
+</Steps>
+
+<Tip>
+Use stashes to quickly switch context between tasks without committing incomplete work.
+</Tip>
+
+## Worktrees
+
+Manage Git worktrees for working on multiple branches simultaneously.
+
+### Worktree Picker
+
+```rust
+// From crates/git_ui/src/worktree_picker.rs
+pub mod worktree_picker;
+```
+
+Worktree operations:
+- **Create worktrees** for different branches
+- **Switch between worktrees** in the same project
+- **Configure worktree directory** location
+- **Remove worktrees** when done
+
+### Worktree Configuration
+
+```rust
+// From crates/git/src/repository.rs
+pub const DEFAULT_WORKTREE_DIRECTORY: &str = "../worktrees";
+
+pub fn resolve_worktree_directory(
+    working_directory: &Path,
+    worktree_directory_setting: &str,
+) -> PathBuf
+```
+
+Configure where worktrees are created:
+- Default location is `../worktrees` relative to your project
+- Customize via `git.worktree_directory` setting
+- Automatic repository name appending for uniqueness
+
+<Note>
+Worktrees share the same repository but allow different branches to be checked out simultaneously, perfect for reviewing PRs or working on features in parallel.
+</Note>
+
+## Merge Conflicts
+
+Resolve merge conflicts with dedicated UI.
+
+### Conflict View
+
+```rust
+// From crates/git_ui/src/conflict_view.rs
+mod conflict_view;
+
+pub fn register_editor(editor, buffer, cx);
+```
+
+Conflict resolution features:
+- **3-way merge view** - See base, local, and remote versions
+- **Inline conflict markers** with syntax highlighting  
+- **Accept incoming/current** with one click
+- **Manual editing** for complex conflicts
+
+### Unmerged Status
+
+```rust
+pub enum UnmergedStatusCode {
+    // Different types of merge conflicts
+}
+
+pub enum UnmergedStatus {
+    // Conflict state tracking  
+}
+```
+
+Glass identifies:
+- **Both modified** - Same file changed on both sides
+- **Both added** - New file added on both sides
+- **Deleted by us/them** - Removal conflicts
+
+## Repository Management
+
+Work with Git repositories at the project level.
+
+### Repository Selector
+
+```rust
+// From crates/git_ui/src/repository_selector.rs
+pub mod repository_selector;
+
+pub fn register(workspace);
+```
+
+For multi-repository projects:
+- **Switch between repositories** in the workspace
+- **View per-repository status**
+- **Separate operations** by repository
+
+### Repository Interface
+
+```rust
+// From crates/git/src/repository.rs
+pub use askpass::{AskPassDelegate, AskPassResult, AskPassSession};
+
+pub const REMOTE_CANCELLED_BY_USER: &str = "Operation cancelled by user";
+```
+
+Repository features:
+- **Authentication handling** via askpass
+- **Hook execution** support
+- **Large file handling** (Git LFS)
+- **Submodule support**
+
+## Git Graph
+
+Visualize commit history as a graph.
+
+### Graph Visualization
+
+```rust
+// From crates/git/src/repository.rs
+pub struct GraphCommitData {
+    pub sha: Oid,
+    pub parents: SmallVec<[Oid; 1]>,
+    pub author_name: SharedString,
+    pub author_email: SharedString,
+    pub commit_timestamp: i64,
+    pub subject: SharedString,
+}
+
+pub const GRAPH_CHUNK_SIZE: usize = 1000;
+```
+
+Graph features:
+- **Branch visualization** showing merges and divergence
+- **Chronological ordering** of commits
+- **Parent relationships** clearly displayed
+- **Lazy loading** for performance with large histories
+
+## File History
+
+View the complete history of individual files.
+
+### File History View
+
+```rust
+// From crates/git_ui/src/file_history_view.rs
+pub mod file_history_view;
+```
+
+File history shows:
+- **All commits** affecting the file
+- **Diffs for each commit** showing what changed
+- **Blame information** at each version
+- **Follow renames** across file moves
+
+## Pull Request Integration
+
+Create pull requests directly from Glass.
+
+```rust
+// From crates/git_ui/src/git_ui.rs
+workspace.register_action(
+    |workspace, _: &zed_actions::git::CreatePullRequest, window, cx| {
+        panel.update(cx, |panel, cx| {
+            panel.create_pull_request(window, cx);
+        });
+    },
+);
+```
+
+PR workflow:
+1. **Push your branch** to the remote
+2. **Create PR** from Git panel
+3. **Fill in details** in your browser
+4. **Track PR status** in Glass
+
+<Tip>
+Glass integrates with GitHub, GitLab, and other hosting providers to streamline your pull request workflow.
+</Tip>
+
+## Clone Repositories
+
+```rust
+// From crates/git_ui/src/clone.rs
+pub mod clone;
+```
+
+Clone repositories from:
+- **GitHub** - Direct integration
+- **GitLab** - Full support
+- **Generic Git URLs** - Any Git remote
+- **Local paths** - Clone local repositories
+
+## Best Practices
+
+1. **Review diffs before committing** to ensure only intended changes are included
+2. **Write meaningful commit messages** following your team's conventions  
+3. **Use partial staging** to create focused, atomic commits
+4. **Leverage git blame** to understand code history and context
+5. **Create branches** for new features or experiments
+6. **Fetch regularly** to stay up-to-date with remote changes
+7. **Resolve conflicts carefully** using the 3-way merge view
+8. **Use stashes** to preserve work when switching contexts
+
+## Related Features
+
+- [Code Editing](/development/editing) - Edit files with Git integration
+- [Navigation](/development/navigation) - Navigate through commit history
+- [Testing](/development/testing) - Run tests before committing

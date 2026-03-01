@@ -1,0 +1,291 @@
+---
+title: Installing Extensions
+description: Learn how to discover, install, and configure extensions in Glass
+---
+
+Glass makes it easy to discover and install extensions to enhance your development experience. This guide covers all the ways to install extensions.
+
+## Opening the Extensions View
+
+The Extensions view is your central hub for managing extensions.
+
+<Steps>
+  <Step title="Open the Extensions panel">
+    Use one of these methods:
+    - Press `Cmd+Shift+X` (macOS) or `Ctrl+Shift+X` (Linux/Windows)
+    - Open the command palette and search for "Extensions"
+    - Click the Extensions icon in the sidebar
+  </Step>
+  <Step title="Browse available extensions">
+    The Extensions view shows:
+    - All available extensions from the registry
+    - Installed extensions (marked with a checkmark)
+    - Extension descriptions and metadata
+  </Step>
+</Steps>
+
+## Installing Published Extensions
+
+Published extensions are distributed through the Glass extension registry and are the easiest to install.
+
+### From the Extensions View
+
+<Steps>
+  <Step title="Search for an extension">
+    Use the search bar at the top to filter extensions by name, description, or functionality:
+    ```
+    Search extensions...
+    ```
+  </Step>
+  <Step title="Review extension details">
+    Each extension card shows:
+    - Extension name and version
+    - Description
+    - Author information
+    - Download count
+    - What it provides (themes, languages, etc.)
+  </Step>
+  <Step title="Click Install">
+    Click the **Install** button on the extension card. Glass will:
+    - Download the extension from the registry
+    - Verify its integrity
+    - Install it to your extensions directory
+    - Load it automatically
+  </Step>
+</Steps>
+
+<Tip>
+For theme extensions, Glass automatically opens the theme selector after installation so you can immediately apply the new theme.
+</Tip>
+
+### Installation Process
+
+When you install an extension:
+
+1. **Download**: Glass downloads the extension package (`.tar.gz` archive) from the registry
+2. **Verification**: The package is verified for integrity and compatibility
+3. **Extraction**: The archive is extracted to `~/.config/glass/extensions/installed/<extension-id>/`
+4. **Loading**: The extension is loaded and its resources are registered
+5. **Activation**: Extension features become immediately available
+
+### Filtering Extensions
+
+You can filter extensions by what they provide:
+
+<Tabs>
+  <Tab title="Languages">
+    View only extensions that add programming language support:
+    ```
+    Extensions: Languages
+    ```
+  </Tab>
+  <Tab title="Themes">
+    View only color theme extensions:
+    ```
+    Extensions: Themes
+    ```
+  </Tab>
+  <Tab title="Language Servers">
+    View extensions that provide language server support:
+    ```
+    Extensions: Language Servers
+    ```
+  </Tab>
+</Tabs>
+
+## Installing Development Extensions
+
+Development extensions allow you to install extensions from a local directory. This is useful for:
+- Testing extensions you're developing
+- Installing unpublished extensions
+- Debugging extension issues
+
+### Installing from a Local Directory
+
+<Steps>
+  <Step title="Prepare your extension">
+    Ensure your extension directory contains a valid `extension.toml` manifest file:
+    ```toml
+    id = "my-extension"
+    name = "My Extension"
+    version = "0.1.0"
+    schema_version = 1
+    authors = ["Your Name"]
+    description = "My custom extension"
+    
+    [lib]
+    kind = "Rust"
+    ```
+  </Step>
+  <Step title="Open the command palette">
+    Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Linux/Windows)
+  </Step>
+  <Step title="Run Install Dev Extension">
+    Search for and select:
+    ```
+    Extensions: Install Dev Extension
+    ```
+  </Step>
+  <Step title="Select the extension directory">
+    A file picker will open. Navigate to and select your extension's root directory (the one containing `extension.toml`)
+  </Step>
+  <Step title="Wait for compilation">
+    Glass will:
+    - Compile your extension (if it contains Rust code)
+    - Create a symlink from the installed directory to your source directory
+    - Load the extension
+  </Step>
+</Steps>
+
+<Note>
+Dev extensions create a symbolic link to your source directory, so changes you make are reflected immediately (after rebuilding if necessary).
+</Note>
+
+### Development Extension Behavior
+
+**Overriding Published Extensions**
+
+If you install a dev extension with the same ID as an already-installed published extension:
+- The dev extension takes precedence
+- The published extension is automatically uninstalled
+- This allows testing local changes against production extensions
+
+**Rebuilding Dev Extensions**
+
+For Rust-based extensions, you can rebuild them without reinstalling:
+
+1. Open the Extensions view
+2. Find your dev extension (marked with `<>` indicator)
+3. Click the **Rebuild** button
+
+This recompiles the extension and hot-reloads it.
+
+## Installing Specific Extension Versions
+
+Sometimes you need to install a specific version of an extension (e.g., for compatibility or testing).
+
+<Steps>
+  <Step title="Find the extension">
+    In the Extensions view, locate the extension you want
+  </Step>
+  <Step title="Open the extension menu">
+    Click the three-dot menu (•••) on the extension card
+  </Step>
+  <Step title="Select Install Another Version">
+    Choose "Install Another Version..." from the menu
+  </Step>
+  <Step title="Choose a version">
+    A list of available versions will appear. Select the version you want to install.
+  </Step>
+</Steps>
+
+<Warning>
+Installing an older version may cause compatibility issues if the extension API has changed.
+</Warning>
+
+## Auto-Installing Extensions
+
+Glass can automatically install certain extensions on first launch to provide essential language support out-of-the-box.
+
+### Configuring Auto-Install
+
+In your settings (`settings.json`):
+
+```json
+{
+  "extensions": {
+    "auto_install_extensions": {
+      "html": true,
+      "graphql": true,
+      "python": true,
+      "rust": true,
+      "typescript": true
+    }
+  }
+}
+```
+
+Extensions listed here will be automatically installed if:
+- They're not already installed
+- Auto-install is enabled for that extension
+- It's the user's first launch or the setting was just added
+
+### Disabling Auto-Install
+
+To prevent an extension from auto-installing:
+
+```json
+{
+  "extensions": {
+    "auto_install_extensions": {
+      "unwanted-extension": false
+    }
+  }
+}
+```
+
+## Troubleshooting Installation Issues
+
+### Extension Won't Install
+
+**Check compatibility**: Ensure the extension supports your version of Glass. Look for:
+- Schema version compatibility
+- WASM API version requirements
+
+**Check network**: Installation requires internet access to download extensions from the registry.
+
+**Check logs**: Open the Glass log to see detailed error messages:
+```
+View > Developer > Show Logs
+```
+
+### Extension Doesn't Appear After Installation
+
+**Restart Glass**: Some extensions may require a restart, though most load immediately.
+
+**Check the extension index**: Glass maintains an index at `~/.config/glass/extensions/index.json`. If this is corrupted, run:
+```
+Extensions: Reload Extensions
+```
+
+### Dev Extension Won't Compile
+
+**Check Rust toolchain**: Rust-based extensions require the Rust compiler. Ensure you have:
+```bash
+rustc --version
+cargo --version
+```
+
+**Check manifest**: Verify your `extension.toml` is valid:
+```toml
+schema_version = 1  # Must be 1 for current extensions
+
+[lib]
+kind = "Rust"  # Required for Rust extensions
+```
+
+**Check build errors**: The error message will show compilation errors. Fix any Rust compiler errors in your code.
+
+## Extension Security
+
+Glass takes extension security seriously:
+
+- **Sandboxing**: Extensions run in WebAssembly sandboxes with limited system access
+- **Capabilities**: Extensions must declare required capabilities in their manifest
+- **Verification**: Published extensions are verified before installation
+- **Source available**: All published extensions have public repositories
+
+<Warning>
+Development extensions bypass some security checks. Only install dev extensions from sources you trust.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Managing Extensions" icon="gear" href="/extensions/managing">
+    Learn how to update, configure, and uninstall extensions
+  </Card>
+  <Card title="Building Extensions" icon="hammer" href="/extensions/getting-started">
+    Create your own extensions for Glass
+  </Card>
+</CardGroup>

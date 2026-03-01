@@ -1,0 +1,530 @@
+---
+title: Go Language Support
+description: Go language support with gopls, comprehensive testing features, and Go toolchain integration
+---
+
+Glass provides first-class Go support through gopls integration, offering intelligent completions, powerful refactoring tools, and extensive testing capabilities.
+
+## LSP Server: gopls
+
+Glass uses [gopls](https://github.com/golang/tools/tree/master/gopls), the official Go language server.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic (Recommended)">
+    Glass automatically installs gopls if not found:
+    
+    1. Checks if `go` is available in PATH
+    2. Runs: `go install golang.org/x/tools/gopls@latest`
+    3. Stores in: `~/.local/share/zed/languages/gopls/`
+    4. Names binary: `gopls_{version}_go_{go_version}`
+    
+    Version detection:
+    - Tracks both gopls and Go compiler versions
+    - Reinstalls if Go version changes
+    - Keeps old versions during updates
+  </Tab>
+  
+  <Tab title="System Installation">
+    Install gopls yourself:
+    
+    ```bash
+    go install golang.org/x/tools/gopls@latest
+    ```
+    
+    Glass will detect and use the version in your `$GOPATH/bin`.
+  </Tab>
+</Tabs>
+
+<Warning>
+Glass requires Go to be installed and available in PATH to install gopls automatically. If `go` is not found, you'll see a notification asking you to install Go first.
+</Warning>
+
+## Features
+
+### Intelligent Completions
+
+Glass provides context-aware Go completions:
+
+<Tabs>
+  <Tab title="Methods & Functions">
+    ```go
+    package main
+    
+    import "strings"
+    
+    func main() {
+        str := "hello"
+        str.| // Shows string methods
+    }
+    ```
+    
+    Completions include:
+    - Method signatures with parameter types
+    - Package-qualified types
+    - Nested field access
+    
+    Example: `strings.ToUpper(s string) string`
+  </Tab>
+  
+  <Tab title="Struct Fields">
+    ```go
+    type Config struct {
+        Host string
+        Port int
+    }
+    
+    func setup() {
+        cfg := Config{
+            | // Suggests Host and Port with types
+        }
+    }
+    ```
+    
+    Shows: `Host string`, `Port int`
+  </Tab>
+  
+  <Tab title="Package Imports">
+    ```go
+    import "|
+    ```
+    
+    Auto-completes:
+    - Standard library packages
+    - Local packages
+    - Vendor packages
+    - Module dependencies
+    
+    With package documentation.
+  </Tab>
+</Tabs>
+
+### Syntax Highlighting
+
+Glass applies semantic highlighting for Go:
+
+```go
+import "fmt"           // Module (keyword)
+
+type Server struct {   // Type (blue)
+    port int          // Field (white)
+}
+
+const MaxSize = 100   // Constant (purple)
+var counter int       // Variable (white)
+
+func process() {      // Function (yellow)
+    fmt.Println()     // Function call (yellow)
+}
+```
+
+### Inlay Hints
+
+gopls provides inlay hints for:
+
+```go
+func greet(name string, age int) {
+    fmt.Printf("Hello %s, age %d\n", name, age)
+}
+
+greet("Alice", 30)
+//    ↑name   ↑age  // Parameter name hints
+
+result := getValue()
+//      ↑ string    // Type hints
+
+for i, v := range items {
+//     ↑ Item  // Range variable type hints
+}
+```
+
+Enabled by default in Glass's initialization options.
+
+## Testing Support
+
+Glass provides extensive Go testing capabilities:
+
+### Regular Tests
+
+<Tabs>
+  <Tab title="Package Tests">
+    Run all tests in the current package:
+    
+    ```bash
+    go test ./path/to/package
+    ```
+    
+    Glass automatically determines the package from your file location.
+  </Tab>
+  
+  <Tab title="Specific Test">
+    ```go
+    func TestExample(t *testing.T) {  // ← Click to run
+        if 2+2 != 4 {
+            t.Error("math is broken")
+        }
+    }
+    ```
+    
+    Command:
+    ```bash
+    go test -run \^TestExample\$
+    ```
+    
+    Glass uses regex anchors to match exact test names.
+  </Tab>
+  
+  <Tab title="Subtests">
+    ```go
+    func TestFeature(t *testing.T) {
+        t.Run("handles errors", func(t *testing.T) {  // ← Click to run
+            // test code
+        })
+    }
+    ```
+    
+    Command:
+    ```bash
+    go test -v -run '^TestFeature$/^handles\\_errors$'
+    ```
+    
+    Special characters are automatically escaped.
+  </Tab>
+</Tabs>
+
+### Testify Suites
+
+For projects using [testify/suite](https://github.com/stretchr/testify):
+
+```go
+import (
+    "testing"
+    "github.com/stretchr/testify/suite"
+)
+
+type ExampleSuite struct {
+    suite.Suite
+}
+
+func (s *ExampleSuite) TestSomething() {  // ← Click to run
+    s.Equal(1, 1)
+}
+
+func TestExampleSuite(t *testing.T) {
+    suite.Run(t, new(ExampleSuite))
+}
+```
+
+Command:
+```bash
+go test -v -run \^TestExampleSuite\$/\^TestSomething\$
+```
+
+Glass automatically detects testify suites and provides specialized tasks.
+
+### Table-Driven Tests
+
+<Tabs>
+  <Tab title="Slice-Based">
+    ```go
+    func TestOperation(t *testing.T) {
+        testCases := []struct{
+            name string
+            input int
+        }{
+            {name: "positive", input: 5},  // ← Click to run this case
+            {name: "negative", input: -5},
+        }
+        
+        for _, tc := range testCases {
+            t.Run(tc.name, func(t *testing.T) {
+                // test code
+            })
+        }
+    }
+    ```
+    
+    Command:
+    ```bash
+    go test -v -run \^TestOperation\$/\^positive\$
+    ```
+  </Tab>
+  
+  <Tab title="Map-Based">
+    ```go
+    testCases := map[string]struct{
+        input  string
+        output string
+    }{
+        "uppercase": {input: "hello", output: "HELLO"},  // ← Click
+        "lowercase": {input: "WORLD", output: "world"},
+    }
+    
+    for name, tc := range testCases {
+        t.Run(name, func(t *testing.T) {
+            // test code
+        })
+    }
+    ```
+    
+    Glass detects both map and slice table tests.
+  </Tab>
+</Tabs>
+
+### Benchmarks
+
+Run benchmarks with memory profiling:
+
+```go
+func BenchmarkOperation(b *testing.B) {  // ← Click to run
+    for i := 0; i < b.N; i++ {
+        operation()
+    }
+}
+```
+
+Command:
+```bash
+go test -benchmem -run='^$' -bench \^BenchmarkOperation\$
+```
+
+### Fuzz Tests
+
+Run fuzz tests (Go 1.18+):
+
+```go
+func FuzzParse(f *testing.F) {  // ← Click to run
+    f.Add("example input")
+    f.Fuzz(func(t *testing.T, input string) {
+        parse(input)
+    })
+}
+```
+
+Command:
+```bash
+go test -fuzz=Fuzz -run \^FuzzParse\$
+```
+
+### Example Tests
+
+Run example tests:
+
+```go
+func Example() {  // ← Click to run
+    fmt.Println("Hello, world!")
+    // Output: Hello, world!
+}
+
+func ExampleGreet() {  // ← Named example
+    Greet("Alice")
+    // Output: Hello, Alice!
+}
+```
+
+Command:
+```bash
+go test -run \^Example\$
+```
+
+<Note>
+Glass filters out `TestMain` functions from the test picker, as they're infrastructure, not individual tests.
+</Note>
+
+## Task Variables
+
+Glass provides these variables for Go tasks:
+
+| Variable | Description | Example |
+|----------|-------------|----------|
+| `GO_PACKAGE` | Current package path | `./cmd/server` |
+| `GO_MODULE_ROOT` | Module root directory | `/home/user/project` |
+| `GO_SUBTEST_NAME` | Sanitized subtest name | `handles\\_errors` |
+| `GO_TABLE_TEST_CASE_NAME` | Table test case name | `positive\\_case` |
+| `GO_SUITE_NAME` | Testify suite name | `ExampleSuite` |
+
+### Package Path Resolution
+
+Glass resolves the package path relative to workspace root:
+
+```
+project/
+├── go.mod
+├── cmd/
+│   └── server/
+│       └── main.go  ← Editing this file
+└── internal/
+    └── api/
+```
+
+When in `cmd/server/main.go`:
+- `GO_PACKAGE` = `./cmd/server`
+- `GO_MODULE_ROOT` = `/path/to/project`
+
+## Available Tasks
+
+<Tabs>
+  <Tab title="Testing">
+    - **Test package**: Run all tests in package
+    - **Test module**: Run all tests in module (`./...`)
+    - **Test function**: Run specific test
+    - **Test subtest**: Run specific subtest
+    - **Test table case**: Run specific table test case
+    - **Test suite method**: Run testify suite test
+    - **Run benchmark**: Run specific benchmark
+    - **Run fuzz test**: Run specific fuzz test
+    - **Run example**: Run example test
+  </Tab>
+  
+  <Tab title="Running">
+    - **Run package**: `go run .` in package directory
+    - **Generate**: `go generate` for current package
+    - **Generate all**: `go generate ./...` for module
+  </Tab>
+</Tabs>
+
+## Configuration
+
+### Initialization Options
+
+Glass configures gopls with:
+
+```json
+{
+  "usePlaceholders": false,
+  "hints": {
+    "assignVariableTypes": true,
+    "compositeLiteralFields": true,
+    "compositeLiteralTypes": true,
+    "constantValues": true,
+    "functionTypeParameters": true,
+    "parameterNames": true,
+    "rangeVariableTypes": true
+  }
+}
+```
+
+### Custom Configuration
+
+Override gopls settings:
+
+```json
+{
+  "lsp": {
+    "gopls": {
+      "initialization_options": {
+        "hints": {
+          "parameterNames": false  // Disable parameter hints
+        },
+        "analyses": {
+          "unusedparams": true,
+          "shadow": true
+        },
+        "staticcheck": true
+      }
+    }
+  }
+}
+```
+
+### Module Detection
+
+Glass finds your Go module by walking up the directory tree looking for `go.mod`:
+
+```go
+module github.com/user/project
+
+go 1.21
+
+require (
+    github.com/stretchr/testify v1.8.4
+)
+```
+
+The module root is used for `go generate ./...` and other workspace-wide commands.
+
+## Code Actions
+
+gopls provides numerous code actions:
+
+- **Extract function**: Extract selected code to a new function
+- **Extract variable**: Extract expression to a variable
+- **Inline**: Inline variable or function
+- **Add import**: Add missing imports
+- **Organize imports**: Sort and group imports
+- **Fill struct**: Complete struct literal fields
+- **Implement interface**: Generate interface method stubs
+
+## Diagnostic Processing
+
+Glass processes Go diagnostics to improve readability:
+
+```go
+// Multi-line error messages are formatted with proper paragraphs
+"cannot use x (type int) as type string in assignment
+
+You might want to convert the type first."
+// Becomes properly formatted with line breaks
+```
+
+## Troubleshooting
+
+<Warning>
+Ensure `go` is in your PATH. Glass needs the Go toolchain to:
+- Install gopls
+- Run tests
+- Generate code
+- Build binaries
+
+Check with: `go version`
+</Warning>
+
+<Tabs>
+  <Tab title="gopls Not Starting">
+    Verify gopls installation:
+    
+    ```bash
+    gopls version
+    # Or check Glass's installation:
+    ls ~/.local/share/zed/languages/gopls/
+    ```
+    
+    Reinstall if needed:
+    ```bash
+    go install golang.org/x/tools/gopls@latest
+    ```
+  </Tab>
+  
+  <Tab title="Import Errors">
+    For missing dependencies:
+    
+    ```bash
+    go mod tidy
+    go mod download
+    ```
+    
+    For local packages:
+    ```bash
+    go mod edit -replace github.com/myorg/mymodule=../mymodule
+    ```
+  </Tab>
+  
+  <Tab title="Test Not Found">
+    Ensure test files:
+    - End with `_test.go`
+    - Are in the same package
+    - Have functions starting with `Test`, `Benchmark`, `Example`, or `Fuzz`
+    
+    Check test discovery:
+    ```bash
+    go test -list .
+    ```
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+- Learn about [gopls settings](https://github.com/golang/tools/blob/master/gopls/doc/settings.md)
+- Explore [Go modules](https://go.dev/doc/modules/)
+- Read about [table-driven tests](https://go.dev/wiki/TableDrivenTests)

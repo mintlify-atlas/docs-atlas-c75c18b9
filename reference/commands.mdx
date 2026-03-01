@@ -1,0 +1,1263 @@
+---
+title: Commands Reference
+description: Complete reference for all Glass code editor commands and actions
+---
+
+This page provides a comprehensive reference for all available commands (actions) in Glass. Commands can be executed via keybindings, the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`), or programmatically.
+
+<Note>
+  Commands in Glass are also called "actions" in the codebase. They follow the format `namespace::CommandName`.
+</Note>
+
+## Editor Commands
+
+### Text Manipulation
+
+<ParamField path="editor::Newline" type="action">
+  Insert a new line at the cursor position. Respects auto-indentation settings.
+</ParamField>
+
+<ParamField path="editor::NewlineAbove" type="action">
+  Insert a new line above the current line and move cursor to it.
+</ParamField>
+
+<ParamField path="editor::NewlineBelow" type="action">
+  Insert a new line below the current line and move cursor to it.
+</ParamField>
+
+<ParamField path="editor::Backspace" type="action">
+  Delete the character before the cursor. Respects auto-closing bracket behavior.
+</ParamField>
+
+<ParamField path="editor::Delete" type="action">
+  Delete the character after the cursor.
+</ParamField>
+
+<ParamField path="editor::DeleteLine" type="action">
+  Delete the entire current line.
+</ParamField>
+
+<ParamField path="editor::DeleteToBeginningOfLine" type="action">
+  Delete all text from cursor to the beginning of the line.
+</ParamField>
+
+<ParamField path="editor::DeleteToEndOfLine" type="action">
+  Delete all text from cursor to the end of the line.
+</ParamField>
+
+<ParamField path="editor::DeleteToPreviousWordStart" type="action">
+  Delete text from cursor to the start of the previous word.
+  
+  Parameters:
+  - `ignore_newlines`: boolean - Skip over newlines when deleting
+  - `ignore_brackets`: boolean - Skip over brackets when deleting
+</ParamField>
+
+<ParamField path="editor::DeleteToNextWordEnd" type="action">
+  Delete text from cursor to the end of the next word.
+  
+  Parameters:
+  - `ignore_newlines`: boolean - Skip over newlines when deleting
+  - `ignore_brackets`: boolean - Skip over brackets when deleting
+</ParamField>
+
+<ParamField path="editor::Cut" type="action">
+  Cut selected text to clipboard. If no selection, cuts the entire line.
+</ParamField>
+
+<ParamField path="editor::Copy" type="action">
+  Copy selected text to clipboard. If no selection, copies the entire line.
+</ParamField>
+
+<ParamField path="editor::Paste" type="action">
+  Paste text from clipboard at cursor position(s).
+</ParamField>
+
+<ParamField path="editor::Undo" type="action">
+  Undo the last edit operation.
+</ParamField>
+
+<ParamField path="editor::Redo" type="action">
+  Redo the last undone operation.
+</ParamField>
+
+<ParamField path="editor::UndoSelection" type="action">
+  Undo the last selection change.
+</ParamField>
+
+<ParamField path="editor::RedoSelection" type="action">
+  Redo the last undone selection change.
+</ParamField>
+
+### Line Operations
+
+<ParamField path="editor::MoveLineUp" type="action">
+  Move the current line or selected lines upward.
+</ParamField>
+
+<ParamField path="editor::MoveLineDown" type="action">
+  Move the current line or selected lines downward.
+</ParamField>
+
+<ParamField path="editor::DuplicateLineUp" type="action">
+  Duplicate the current line or selection above.
+</ParamField>
+
+<ParamField path="editor::DuplicateLineDown" type="action">
+  Duplicate the current line or selection below.
+</ParamField>
+
+<ParamField path="editor::JoinLines" type="action">
+  Join the current line with the next line.
+</ParamField>
+
+<ParamField path="editor::Transpose" type="action">
+  Transpose (swap) characters around the cursor.
+</ParamField>
+
+### Indentation
+
+<ParamField path="editor::Indent" type="action">
+  Indent the current line or selected lines.
+</ParamField>
+
+<ParamField path="editor::Outdent" type="action">
+  Outdent (unindent) the current line or selected lines.
+</ParamField>
+
+<ParamField path="editor::Tab" type="action">
+  Insert a tab or spaces (based on settings) or accept completion/snippet.
+</ParamField>
+
+<ParamField path="editor::Backtab" type="action">
+  Remove indentation at cursor position.
+</ParamField>
+
+### Comments
+
+<ParamField path="editor::ToggleComments" type="action">
+  Toggle line or block comments for selected lines.
+  
+  Parameters:
+  - `advance_downwards`: boolean - Move cursor down after toggling
+</ParamField>
+
+### Navigation
+
+<ParamField path="editor::MoveUp" type="action">
+  Move cursor up one line.
+</ParamField>
+
+<ParamField path="editor::MoveDown" type="action">
+  Move cursor down one line.
+</ParamField>
+
+<ParamField path="editor::MoveLeft" type="action">
+  Move cursor left one character.
+</ParamField>
+
+<ParamField path="editor::MoveRight" type="action">
+  Move cursor right one character.
+</ParamField>
+
+<ParamField path="editor::MoveToBeginningOfLine" type="action">
+  Move cursor to the beginning of the line.
+  
+  Parameters:
+  - `stop_at_soft_wraps`: boolean - Stop at soft wrap points
+  - `stop_at_indent`: boolean - Stop at first non-whitespace character
+</ParamField>
+
+<ParamField path="editor::MoveToEndOfLine" type="action">
+  Move cursor to the end of the line.
+  
+  Parameters:
+  - `stop_at_soft_wraps`: boolean - Stop at soft wrap points
+</ParamField>
+
+<ParamField path="editor::MoveToBeginning" type="action">
+  Move cursor to the beginning of the file.
+</ParamField>
+
+<ParamField path="editor::MoveToEnd" type="action">
+  Move cursor to the end of the file.
+</ParamField>
+
+<ParamField path="editor::MoveToPreviousWordStart" type="action">
+  Move cursor to the start of the previous word.
+</ParamField>
+
+<ParamField path="editor::MoveToNextWordEnd" type="action">
+  Move cursor to the end of the next word.
+</ParamField>
+
+<ParamField path="editor::MoveToPreviousSubwordStart" type="action">
+  Move cursor to the start of the previous subword (camelCase/snake_case boundary).
+</ParamField>
+
+<ParamField path="editor::MoveToNextSubwordEnd" type="action">
+  Move cursor to the end of the next subword.
+</ParamField>
+
+<ParamField path="editor::MoveToStartOfParagraph" type="action">
+  Move cursor to the start of the current paragraph.
+</ParamField>
+
+<ParamField path="editor::MoveToEndOfParagraph" type="action">
+  Move cursor to the end of the current paragraph.
+</ParamField>
+
+<ParamField path="editor::MovePageUp" type="action">
+  Move cursor up one page.
+  
+  Parameters:
+  - `center_cursor`: boolean - Center the cursor after moving
+</ParamField>
+
+<ParamField path="editor::MovePageDown" type="action">
+  Move cursor down one page.
+  
+  Parameters:
+  - `center_cursor`: boolean - Center the cursor after moving
+</ParamField>
+
+### Selection
+
+<ParamField path="editor::SelectAll" type="action">
+  Select all text in the current buffer.
+</ParamField>
+
+<ParamField path="editor::SelectLine" type="action">
+  Select the entire current line.
+</ParamField>
+
+<ParamField path="editor::SelectUp" type="action">
+  Extend selection up one line.
+</ParamField>
+
+<ParamField path="editor::SelectDown" type="action">
+  Extend selection down one line.
+</ParamField>
+
+<ParamField path="editor::SelectLeft" type="action">
+  Extend selection left one character.
+</ParamField>
+
+<ParamField path="editor::SelectRight" type="action">
+  Extend selection right one character.
+</ParamField>
+
+<ParamField path="editor::SelectToBeginningOfLine" type="action">
+  Extend selection to the beginning of the line.
+  
+  Parameters:
+  - `stop_at_soft_wraps`: boolean
+  - `stop_at_indent`: boolean
+</ParamField>
+
+<ParamField path="editor::SelectToEndOfLine" type="action">
+  Extend selection to the end of the line.
+  
+  Parameters:
+  - `stop_at_soft_wraps`: boolean
+</ParamField>
+
+<ParamField path="editor::SelectToBeginning" type="action">
+  Extend selection to the beginning of the file.
+</ParamField>
+
+<ParamField path="editor::SelectToEnd" type="action">
+  Extend selection to the end of the file.
+</ParamField>
+
+<ParamField path="editor::SelectToPreviousWordStart" type="action">
+  Extend selection to the start of the previous word.
+</ParamField>
+
+<ParamField path="editor::SelectToNextWordEnd" type="action">
+  Extend selection to the end of the next word.
+</ParamField>
+
+<ParamField path="editor::SelectNext" type="action">
+  Select the next occurrence of the current selection.
+  
+  Parameters:
+  - `replace_newest`: boolean - Replace current selection instead of adding
+</ParamField>
+
+<ParamField path="editor::SelectPrevious" type="action">
+  Select the previous occurrence of the current selection.
+  
+  Parameters:
+  - `replace_newest`: boolean - Replace current selection instead of adding
+</ParamField>
+
+<ParamField path="editor::SelectAllMatches" type="action">
+  Select all occurrences of the current selection.
+</ParamField>
+
+<ParamField path="editor::SelectLargerSyntaxNode" type="action">
+  Expand selection to the next larger syntax node.
+</ParamField>
+
+<ParamField path="editor::SelectSmallerSyntaxNode" type="action">
+  Shrink selection to the next smaller syntax node.
+</ParamField>
+
+<ParamField path="editor::SelectEnclosingSymbol" type="action">
+  Select the enclosing symbol at cursor position.
+</ParamField>
+
+### Multiple Cursors
+
+<ParamField path="editor::AddSelectionAbove" type="action">
+  Add a cursor on the line above.
+  
+  Parameters:
+  - `skip_soft_wrap`: boolean - Skip soft-wrapped lines
+</ParamField>
+
+<ParamField path="editor::AddSelectionBelow" type="action">
+  Add a cursor on the line below.
+  
+  Parameters:
+  - `skip_soft_wrap`: boolean - Skip soft-wrapped lines
+</ParamField>
+
+### Code Intelligence
+
+<ParamField path="editor::GoToDefinition" type="action">
+  Navigate to the definition of the symbol at cursor.
+</ParamField>
+
+<ParamField path="editor::GoToDefinitionSplit" type="action">
+  Open the definition in a split pane.
+</ParamField>
+
+<ParamField path="editor::GoToTypeDefinition" type="action">
+  Navigate to the type definition of the symbol at cursor.
+</ParamField>
+
+<ParamField path="editor::GoToTypeDefinitionSplit" type="action">
+  Open the type definition in a split pane.
+</ParamField>
+
+<ParamField path="editor::GoToImplementation" type="action">
+  Navigate to the implementation of the symbol at cursor.
+</ParamField>
+
+<ParamField path="editor::FindAllReferences" type="action">
+  Find all references to the symbol at cursor.
+</ParamField>
+
+<ParamField path="editor::GoToDeclaration" type="action">
+  Navigate to the declaration of the symbol at cursor.
+</ParamField>
+
+<ParamField path="editor::Rename" type="action">
+  Rename the symbol at cursor across the project.
+</ParamField>
+
+<ParamField path="editor::ConfirmRename" type="action">
+  Confirm a rename operation.
+</ParamField>
+
+<ParamField path="editor::Format" type="action">
+  Format the current file or selection.
+</ParamField>
+
+<ParamField path="editor::OrganizeImports" type="action">
+  Organize/sort imports in the current file.
+</ParamField>
+
+<ParamField path="editor::ToggleCodeActions" type="action">
+  Show or hide the code actions menu.
+</ParamField>
+
+<ParamField path="editor::ConfirmCodeAction" type="action">
+  Confirm and apply the selected code action.
+</ParamField>
+
+<ParamField path="editor::ShowCompletions" type="action">
+  Show code completion suggestions.
+</ParamField>
+
+<ParamField path="editor::ShowWordCompletions" type="action">
+  Show word-based completions.
+</ParamField>
+
+<ParamField path="editor::ConfirmCompletion" type="action">
+  Accept the selected completion.
+</ParamField>
+
+<ParamField path="editor::ConfirmCompletionReplace" type="action">
+  Accept completion and replace the word after cursor.
+</ParamField>
+
+<ParamField path="editor::ShowSignatureHelp" type="action">
+  Show parameter hints for the current function call.
+</ParamField>
+
+<ParamField path="editor::Hover" type="action">
+  Show hover information for the symbol at cursor.
+</ParamField>
+
+<ParamField path="editor::BlameHover" type="action">
+  Show git blame information in a hover.
+</ParamField>
+
+### Diagnostics
+
+<ParamField path="editor::GoToDiagnostic" type="action">
+  Navigate to the next diagnostic (error/warning).
+  
+  Parameters:
+  - `severity`: object - Minimum and maximum severity to include
+</ParamField>
+
+<ParamField path="editor::GoToPreviousDiagnostic" type="action">
+  Navigate to the previous diagnostic.
+  
+  Parameters:
+  - `severity`: object - Minimum and maximum severity to include
+</ParamField>
+
+### Folding
+
+<ParamField path="editor::Fold" type="action">
+  Fold the code block at cursor.
+</ParamField>
+
+<ParamField path="editor::FoldRecursive" type="action">
+  Fold the code block and all nested blocks.
+</ParamField>
+
+<ParamField path="editor::UnfoldLines" type="action">
+  Unfold the code block at cursor.
+</ParamField>
+
+<ParamField path="editor::UnfoldRecursive" type="action">
+  Unfold the code block and all nested blocks.
+</ParamField>
+
+<ParamField path="editor::ToggleFold" type="action">
+  Toggle folding at cursor position.
+</ParamField>
+
+<ParamField path="editor::FoldAll" type="action">
+  Fold all foldable code blocks.
+</ParamField>
+
+<ParamField path="editor::UnfoldAll" type="action">
+  Unfold all folded code blocks.
+</ParamField>
+
+<ParamField path="editor::FoldAtLevel_1" type="action">
+  Fold all blocks at indentation level 1.
+</ParamField>
+
+<ParamField path="editor::FoldAtLevel_2" type="action">
+  Fold all blocks at indentation level 2.
+</ParamField>
+
+### Display
+
+<ParamField path="editor::ToggleLineNumbers" type="action">
+  Show or hide line numbers in the gutter.
+</ParamField>
+
+<ParamField path="editor::ToggleSoftWrap" type="action">
+  Toggle soft wrapping of long lines.
+</ParamField>
+
+<ParamField path="editor::ToggleInlayHints" type="action">
+  Show or hide inlay hints.
+</ParamField>
+
+<ParamField path="editor::ScrollCursorCenter" type="action">
+  Scroll the editor to center the cursor.
+</ParamField>
+
+### Git
+
+<ParamField path="editor::ToggleSelectedDiffHunks" type="action">
+  Toggle display of git diff hunks in selected regions.
+</ParamField>
+
+<ParamField path="editor::ExpandAllDiffHunks" type="action">
+  Expand all collapsed git diff hunks.
+</ParamField>
+
+<ParamField path="editor::GoToHunk" type="action">
+  Navigate to the next git diff hunk.
+</ParamField>
+
+<ParamField path="editor::GoToPreviousHunk" type="action">
+  Navigate to the previous git diff hunk.
+</ParamField>
+
+<ParamField path="editor::GoToPreviousChange" type="action">
+  Navigate to the previous change in file history.
+</ParamField>
+
+<ParamField path="editor::GoToNextChange" type="action">
+  Navigate to the next change in file history.
+</ParamField>
+
+### Debugging
+
+<ParamField path="editor::ToggleBreakpoint" type="action">
+  Toggle a breakpoint at the current line.
+</ParamField>
+
+<ParamField path="editor::EditLogBreakpoint" type="action">
+  Edit a log breakpoint at the current line.
+</ParamField>
+
+### Miscellaneous
+
+<ParamField path="editor::Cancel" type="action">
+  Cancel the current operation (close popover, clear selection, etc.).
+</ParamField>
+
+<ParamField path="editor::OpenExcerpts" type="action">
+  Open excerpts (search results/references) in current pane.
+</ParamField>
+
+<ParamField path="editor::OpenExcerptsSplit" type="action">
+  Open excerpts in a split pane.
+</ParamField>
+
+<ParamField path="editor::Rewrap" type="action">
+  Rewrap text to the preferred line length.
+</ParamField>
+
+## Workspace Commands
+
+### File Operations
+
+<ParamField path="workspace::Open" type="action">
+  Open a file or folder picker.
+</ParamField>
+
+<ParamField path="workspace::NewFile" type="action">
+  Create a new untitled file.
+</ParamField>
+
+<ParamField path="workspace::NewWindow" type="action">
+  Open a new Glass window.
+</ParamField>
+
+<ParamField path="workspace::Save" type="action">
+  Save the current file.
+</ParamField>
+
+<ParamField path="workspace::SaveAs" type="action">
+  Save the current file with a new name.
+</ParamField>
+
+<ParamField path="workspace::SaveAll" type="action">
+  Save all open files.
+</ParamField>
+
+<ParamField path="workspace::SaveWithoutFormat" type="action">
+  Save the current file without formatting.
+</ParamField>
+
+<ParamField path="workspace::CloseWindow" type="action">
+  Close the current window.
+</ParamField>
+
+### Pane Management
+
+<ParamField path="workspace::ActivatePane" type="action">
+  Activate a pane by index.
+  
+  Parameters:
+  - Index (0-8): number - Pane number to activate
+</ParamField>
+
+<ParamField path="workspace::ActivatePaneLeft" type="action">
+  Activate the pane to the left.
+</ParamField>
+
+<ParamField path="workspace::ActivatePaneRight" type="action">
+  Activate the pane to the right.
+</ParamField>
+
+<ParamField path="workspace::ActivatePaneUp" type="action">
+  Activate the pane above.
+</ParamField>
+
+<ParamField path="workspace::ActivatePaneDown" type="action">
+  Activate the pane below.
+</ParamField>
+
+<ParamField path="workspace::SwapPaneLeft" type="action">
+  Swap current pane with the one to the left.
+</ParamField>
+
+<ParamField path="workspace::SwapPaneRight" type="action">
+  Swap current pane with the one to the right.
+</ParamField>
+
+<ParamField path="workspace::SwapPaneUp" type="action">
+  Swap current pane with the one above.
+</ParamField>
+
+<ParamField path="workspace::SwapPaneDown" type="action">
+  Swap current pane with the one below.
+</ParamField>
+
+### Dock Management
+
+<ParamField path="workspace::ToggleLeftDock" type="action">
+  Show or hide the left dock (project panel).
+</ParamField>
+
+<ParamField path="workspace::ToggleRightDock" type="action">
+  Show or hide the right dock (agent panel).
+</ParamField>
+
+<ParamField path="workspace::ToggleBottomDock" type="action">
+  Show or hide the bottom dock (terminal, diagnostics).
+</ParamField>
+
+<ParamField path="workspace::ToggleAllDocks" type="action">
+  Toggle visibility of all docks.
+</ParamField>
+
+<ParamField path="workspace::CloseActiveDock" type="action">
+  Close the currently active dock.
+</ParamField>
+
+### Terminal
+
+<ParamField path="workspace::NewTerminal" type="action">
+  Create a new terminal in the current directory.
+</ParamField>
+
+<ParamField path="terminal_panel::Toggle" type="action">
+  Show or hide the terminal panel.
+</ParamField>
+
+### Zoom
+
+<ParamField path="workspace::ToggleZoom" type="action">
+  Toggle zoom mode for the current pane (maximize/restore).
+</ParamField>
+
+### Sessions
+
+<ParamField path="workspace::Unfollow" type="action">
+  Stop following another user in a collaborative session.
+</ParamField>
+
+## Pane Commands
+
+<ParamField path="pane::ActivateItem" type="action">
+  Activate an item (tab) by index.
+  
+  Parameters:
+  - Index (0-8): number - Tab number to activate
+</ParamField>
+
+<ParamField path="pane::ActivateLastItem" type="action">
+  Activate the last tab in the pane.
+</ParamField>
+
+<ParamField path="pane::ActivateNextItem" type="action">
+  Activate the next tab.
+</ParamField>
+
+<ParamField path="pane::ActivatePreviousItem" type="action">
+  Activate the previous tab.
+</ParamField>
+
+<ParamField path="pane::CloseActiveItem" type="action">
+  Close the currently active tab.
+  
+  Parameters:
+  - `close_pinned`: boolean - Whether to close pinned tabs
+</ParamField>
+
+<ParamField path="pane::CloseAllItems" type="action">
+  Close all tabs in the pane.
+  
+  Parameters:
+  - `close_pinned`: boolean - Whether to close pinned tabs
+</ParamField>
+
+<ParamField path="pane::CloseOtherItems" type="action">
+  Close all tabs except the active one.
+  
+  Parameters:
+  - `close_pinned`: boolean - Whether to close pinned tabs
+</ParamField>
+
+<ParamField path="pane::CloseCleanItems" type="action">
+  Close all unmodified tabs.
+  
+  Parameters:
+  - `close_pinned`: boolean - Whether to close pinned tabs
+</ParamField>
+
+<ParamField path="pane::ReopenClosedItem" type="action">
+  Reopen the last closed tab.
+</ParamField>
+
+<ParamField path="pane::SplitUp" type="action">
+  Split the pane upward.
+</ParamField>
+
+<ParamField path="pane::SplitDown" type="action">
+  Split the pane downward.
+</ParamField>
+
+<ParamField path="pane::SplitLeft" type="action">
+  Split the pane to the left.
+</ParamField>
+
+<ParamField path="pane::SplitRight" type="action">
+  Split the pane to the right.
+</ParamField>
+
+<ParamField path="pane::GoBack" type="action">
+  Navigate to the previous location in navigation history.
+</ParamField>
+
+<ParamField path="pane::GoForward" type="action">
+  Navigate to the next location in navigation history.
+</ParamField>
+
+<ParamField path="pane::TogglePinTab" type="action">
+  Pin or unpin the current tab.
+</ParamField>
+
+<ParamField path="pane::DeploySearch" type="action">
+  Open project search.
+  
+  Parameters:
+  - `replace_enabled`: boolean - Open with replace mode enabled
+</ParamField>
+
+<ParamField path="pane::RevealInProjectPanel" type="action">
+  Reveal the current file in the project panel.
+</ParamField>
+
+## Search Commands
+
+### Buffer Search
+
+<ParamField path="buffer_search::Deploy" type="action">
+  Open buffer search (find in current file).
+  
+  Parameters:
+  - `focus`: boolean - Whether to focus the search input
+  - `selection_search_enabled`: boolean - Search for current selection
+</ParamField>
+
+<ParamField path="buffer_search::DeployReplace" type="action">
+  Open buffer search with replace mode.
+</ParamField>
+
+<ParamField path="buffer_search::Dismiss" type="action">
+  Close the buffer search bar.
+</ParamField>
+
+<ParamField path="buffer_search::FocusEditor" type="action">
+  Return focus to the editor from the search bar.
+</ParamField>
+
+<ParamField path="search::SelectNextMatch" type="action">
+  Select the next search result.
+</ParamField>
+
+<ParamField path="search::SelectPreviousMatch" type="action">
+  Select the previous search result.
+</ParamField>
+
+<ParamField path="search::SelectAllMatches" type="action">
+  Select all search results.
+</ParamField>
+
+<ParamField path="search::ReplaceNext" type="action">
+  Replace the current match and move to next.
+</ParamField>
+
+<ParamField path="search::ReplaceAll" type="action">
+  Replace all matches in the file.
+</ParamField>
+
+### Project Search
+
+<ParamField path="project_search::ToggleFocus" type="action">
+  Focus or unfocus the project search panel.
+</ParamField>
+
+<ParamField path="project_search::SearchInNew" type="action">
+  Open search results in a new pane.
+</ParamField>
+
+<ParamField path="project_search::ToggleFilters" type="action">
+  Show or hide search filters.
+</ParamField>
+
+<ParamField path="project_search::ToggleAllSearchResults" type="action">
+  Expand or collapse all search results.
+</ParamField>
+
+<ParamField path="search::ToggleCaseSensitive" type="action">
+  Toggle case-sensitive search.
+</ParamField>
+
+<ParamField path="search::ToggleWholeWord" type="action">
+  Toggle whole-word search.
+</ParamField>
+
+<ParamField path="search::ToggleRegex" type="action">
+  Toggle regular expression search.
+</ParamField>
+
+<ParamField path="search::ToggleReplace" type="action">
+  Toggle replace mode in search.
+</ParamField>
+
+<ParamField path="search::ToggleSelection" type="action">
+  Toggle search in selection only.
+</ParamField>
+
+## Project Panel Commands
+
+<ParamField path="project_panel::ToggleFocus" type="action">
+  Focus or unfocus the project panel.
+</ParamField>
+
+<ParamField path="project_panel::NewFile" type="action">
+  Create a new file in the selected directory.
+</ParamField>
+
+<ParamField path="project_panel::NewDirectory" type="action">
+  Create a new directory in the selected directory.
+</ParamField>
+
+<ParamField path="project_panel::Rename" type="action">
+  Rename the selected file or directory.
+</ParamField>
+
+<ParamField path="project_panel::Duplicate" type="action">
+  Duplicate the selected file or directory.
+</ParamField>
+
+<ParamField path="project_panel::Trash" type="action">
+  Move the selected file or directory to trash.
+  
+  Parameters:
+  - `skip_prompt`: boolean - Skip confirmation prompt
+</ParamField>
+
+<ParamField path="project_panel::Delete" type="action">
+  Permanently delete the selected file or directory.
+  
+  Parameters:
+  - `skip_prompt`: boolean - Skip confirmation prompt
+</ParamField>
+
+<ParamField path="project_panel::Cut" type="action">
+  Cut the selected file or directory.
+</ParamField>
+
+<ParamField path="project_panel::Copy" type="action">
+  Copy the selected file or directory.
+</ParamField>
+
+<ParamField path="project_panel::Paste" type="action">
+  Paste the cut or copied file or directory.
+</ParamField>
+
+<ParamField path="project_panel::CopyPath" type="action">
+  Copy the full path of the selected item.
+</ParamField>
+
+<ParamField path="project_panel::CopyRelativePath" type="action">
+  Copy the relative path of the selected item.
+</ParamField>
+
+<ParamField path="project_panel::RevealInFileManager" type="action">
+  Reveal the selected item in the system file manager.
+</ParamField>
+
+<ParamField path="project_panel::ExpandSelectedEntry" type="action">
+  Expand the selected directory.
+</ParamField>
+
+<ParamField path="project_panel::CollapseSelectedEntry" type="action">
+  Collapse the selected directory.
+</ParamField>
+
+<ParamField path="project_panel::CollapseAllEntries" type="action">
+  Collapse all directories in the tree.
+</ParamField>
+
+## Git Commands
+
+<ParamField path="git::Blame" type="action">
+  Show git blame for the current file.
+</ParamField>
+
+<ParamField path="git::OpenModifiedFiles" type="action">
+  Open all modified files in the workspace.
+</ParamField>
+
+<ParamField path="git::ReviewDiff" type="action">
+  Review git diff for staged/unstaged changes.
+</ParamField>
+
+<ParamField path="git::Diff" type="action">
+  Show diff for the current file.
+</ParamField>
+
+<ParamField path="git::Restore" type="action">
+  Restore the current file to HEAD state.
+</ParamField>
+
+<ParamField path="git::ToggleStaged" type="action">
+  Toggle staging for the current hunk.
+</ParamField>
+
+<ParamField path="git::StageAndNext" type="action">
+  Stage the current hunk and move to the next.
+</ParamField>
+
+<ParamField path="git::UnstageAndNext" type="action">
+  Unstage the current hunk and move to the next.
+</ParamField>
+
+<ParamField path="git::StageAll" type="action">
+  Stage all changes in the workspace.
+</ParamField>
+
+<ParamField path="git::UnstageAll" type="action">
+  Unstage all staged changes.
+</ParamField>
+
+<ParamField path="git::Commit" type="action">
+  Commit staged changes.
+</ParamField>
+
+<ParamField path="git::Amend" type="action">
+  Amend the last commit with staged changes.
+</ParamField>
+
+<ParamField path="git::Fetch" type="action">
+  Fetch from remote repository.
+</ParamField>
+
+<ParamField path="git::Pull" type="action">
+  Pull from remote repository.
+</ParamField>
+
+<ParamField path="git::PullRebase" type="action">
+  Pull with rebase from remote repository.
+</ParamField>
+
+<ParamField path="git::Push" type="action">
+  Push to remote repository.
+</ParamField>
+
+<ParamField path="git::ForcePush" type="action">
+  Force push to remote repository.
+</ParamField>
+
+<ParamField path="git_panel::ToggleFocus" type="action">
+  Focus or unfocus the git panel.
+</ParamField>
+
+## Agent (AI Assistant) Commands
+
+<ParamField path="agent::ToggleFocus" type="action">
+  Focus or unfocus the agent panel.
+</ParamField>
+
+<ParamField path="agent::NewThread" type="action">
+  Create a new agent thread.
+</ParamField>
+
+<ParamField path="agent::NewTextThread" type="action">
+  Create a new text-only agent thread.
+</ParamField>
+
+<ParamField path="agent::AddSelectionToThread" type="action">
+  Add the current selection to the agent thread.
+</ParamField>
+
+<ParamField path="assistant::InlineAssist" type="action">
+  Trigger inline AI assistance at cursor.
+</ParamField>
+
+<ParamField path="assistant::InsertIntoEditor" type="action">
+  Insert the agent's response into the editor.
+</ParamField>
+
+<ParamField path="agent::Keep" type="action">
+  Accept an agent suggestion (in diff view).
+</ParamField>
+
+<ParamField path="agent::Reject" type="action">
+  Reject an agent suggestion (in diff view).
+</ParamField>
+
+<ParamField path="agent::KeepAll" type="action">
+  Accept all agent suggestions.
+</ParamField>
+
+<ParamField path="agent::RejectAll" type="action">
+  Reject all agent suggestions.
+</ParamField>
+
+<ParamField path="agent::OpenSettings" type="action">
+  Open agent settings.
+</ParamField>
+
+<ParamField path="agent::OpenHistory" type="action">
+  Open agent thread history.
+</ParamField>
+
+<ParamField path="agent::ToggleModelSelector" type="action">
+  Show or hide the model selector.
+</ParamField>
+
+## Diagnostics Commands
+
+<ParamField path="diagnostics::Deploy" type="action">
+  Open the diagnostics panel.
+</ParamField>
+
+<ParamField path="diagnostics::ToggleDiagnosticsRefresh" type="action">
+  Toggle automatic diagnostics refresh.
+</ParamField>
+
+## Debugger Commands
+
+<ParamField path="debugger::Start" type="action">
+  Start a debug session.
+</ParamField>
+
+<ParamField path="debugger::Stop" type="action">
+  Stop the current debug session.
+</ParamField>
+
+<ParamField path="debugger::Continue" type="action">
+  Continue execution (resume from breakpoint).
+</ParamField>
+
+<ParamField path="debugger::Pause" type="action">
+  Pause execution.
+</ParamField>
+
+<ParamField path="debugger::StepOver" type="action">
+  Step over the current line.
+</ParamField>
+
+<ParamField path="debugger::StepInto" type="action">
+  Step into the function call.
+</ParamField>
+
+<ParamField path="debugger::StepOut" type="action">
+  Step out of the current function.
+</ParamField>
+
+<ParamField path="debugger::Rerun" type="action">
+  Restart the debug session.
+</ParamField>
+
+<ParamField path="debug_panel::ToggleFocus" type="action">
+  Focus or unfocus the debug panel.
+</ParamField>
+
+## Task Commands
+
+<ParamField path="task::Spawn" type="action">
+  Run a task from the task menu.
+  
+  Parameters:
+  - `task_name`: string - Specific task to run
+  - `task_tag`: string - Run tasks with this tag
+  - `reveal_target`: string - Where to show output ("dock", "center")
+</ParamField>
+
+<ParamField path="task::Rerun" type="action">
+  Rerun the last task.
+  
+  Parameters:
+  - `reevaluate_context`: boolean - Re-evaluate task context/variables
+</ParamField>
+
+## Terminal Commands
+
+<ParamField path="terminal::Clear" type="action">
+  Clear the terminal output.
+</ParamField>
+
+<ParamField path="terminal::Copy" type="action">
+  Copy selected text from terminal.
+</ParamField>
+
+<ParamField path="terminal::Paste" type="action">
+  Paste text into terminal.
+</ParamField>
+
+<ParamField path="terminal::ShowCharacterPalette" type="action">
+  Show character palette (emoji picker).
+</ParamField>
+
+## Application Commands
+
+<ParamField path="zed::OpenSettings" type="action">
+  Open the settings UI.
+</ParamField>
+
+<ParamField path="zed::OpenSettingsFile" type="action">
+  Open the settings JSON file in editor.
+</ParamField>
+
+<ParamField path="zed::OpenKeymap" type="action">
+  Open the keymap file in editor.
+</ParamField>
+
+<ParamField path="zed::Quit" type="action">
+  Quit the application.
+</ParamField>
+
+<ParamField path="zed::Hide" type="action">
+  Hide the application (macOS only).
+</ParamField>
+
+<ParamField path="zed::HideOthers" type="action">
+  Hide other applications (macOS only).
+</ParamField>
+
+<ParamField path="zed::Minimize" type="action">
+  Minimize the current window.
+</ParamField>
+
+<ParamField path="zed::ToggleFullScreen" type="action">
+  Toggle full screen mode.
+</ParamField>
+
+<ParamField path="zed::IncreaseBufferFontSize" type="action">
+  Increase editor font size.
+  
+  Parameters:
+  - `persist`: boolean - Save the change to settings
+</ParamField>
+
+<ParamField path="zed::DecreaseBufferFontSize" type="action">
+  Decrease editor font size.
+  
+  Parameters:
+  - `persist`: boolean - Save the change to settings
+</ParamField>
+
+<ParamField path="zed::ResetBufferFontSize" type="action">
+  Reset editor font size to default.
+  
+  Parameters:
+  - `persist`: boolean - Save the change to settings
+</ParamField>
+
+<ParamField path="zed::Extensions" type="action">
+  Open the extensions panel.
+</ParamField>
+
+## File Finder Commands
+
+<ParamField path="file_finder::Toggle" type="action">
+  Open or close the file finder.
+</ParamField>
+
+<ParamField path="file_finder::ToggleSplitMenu" type="action">
+  Show menu to choose split direction for opening files.
+</ParamField>
+
+<ParamField path="file_finder::ToggleFilterMenu" type="action">
+  Show file type filter menu.
+</ParamField>
+
+## Command Palette
+
+<ParamField path="command_palette::Toggle" type="action">
+  Open or close the command palette.
+</ParamField>
+
+## Theme Commands
+
+<ParamField path="theme_selector::Toggle" type="action">
+  Open the theme selector.
+</ParamField>
+
+## Language Commands
+
+<ParamField path="language_selector::Toggle" type="action">
+  Open the language selector for current file.
+</ParamField>
+
+<ParamField path="encoding_selector::Toggle" type="action">
+  Open the encoding selector for current file.
+</ParamField>
+
+## Menu Commands
+
+<ParamField path="menu::SelectNext" type="action">
+  Select the next item in a menu or list.
+</ParamField>
+
+<ParamField path="menu::SelectPrevious" type="action">
+  Select the previous item in a menu or list.
+</ParamField>
+
+<ParamField path="menu::SelectFirst" type="action">
+  Select the first item in a menu or list.
+</ParamField>
+
+<ParamField path="menu::SelectLast" type="action">
+  Select the last item in a menu or list.
+</ParamField>
+
+<ParamField path="menu::Confirm" type="action">
+  Confirm the selected menu item.
+</ParamField>
+
+<ParamField path="menu::Cancel" type="action">
+  Cancel and close the menu.
+</ParamField>
+
+## Custom Commands
+
+You can define custom commands by mapping them to existing actions in your keymap file:
+
+```json
+[
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl+shift+d": "editor::DuplicateLine"
+    }
+  }
+]
+```
+
+Or create command aliases in settings:
+
+```json
+{
+  "command_aliases": {
+    "W": "workspace::Save",
+    "Q": "zed::Quit"
+  }
+}
+```
+
+<Note>
+  This reference includes the most commonly used commands. For a complete list of all available commands, open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`) and browse the available actions.
+</Note>

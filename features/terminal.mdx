@@ -1,0 +1,477 @@
+---
+title: Integrated Terminal
+description: Powerful integrated terminal with multiple sessions, shell integration, and hyperlink support
+---
+
+## Overview
+
+Glass includes a fully-featured integrated terminal built on Alacritty's terminal emulator. The terminal provides a native terminal experience with advanced features like hyperlink detection, shell integration, and seamless editor integration.
+
+## Terminal Actions
+
+### Available Commands
+
+```rust
+// From crates/terminal/src/terminal.rs
+actions!(
+    terminal,
+    [
+        Clear,
+        Copy,
+        Paste,
+        ShowCharacterPalette,
+        SearchTest,
+        ScrollLineUp,
+        ScrollLineDown,
+        ScrollPageUp,
+        ScrollPageDown,
+        ScrollHalfPageUp,
+        ScrollHalfPageDown,
+        ScrollToTop,
+        ScrollToBottom,
+        SelectAll,
+    ]
+);
+```
+
+<Tabs>
+  <Tab title="Clipboard">
+    - **Copy**: Copy selected text to clipboard
+    - **Paste**: Paste from clipboard
+    - **SelectAll**: Select all terminal content
+  </Tab>
+  <Tab title="Navigation">
+    - **ScrollLineUp/Down**: Scroll by single lines
+    - **ScrollPageUp/Down**: Scroll by full pages
+    - **ScrollHalfPageUp/Down**: Scroll by half pages
+    - **ScrollToTop/Bottom**: Jump to buffer extremes
+  </Tab>
+  <Tab title="Utilities">
+    - **Clear**: Clear the terminal screen
+    - **ShowCharacterPalette**: Insert special characters
+    - **SearchTest**: Search within terminal output
+  </Tab>
+</Tabs>
+
+## Terminal Configuration
+
+### Environment Variables
+
+```rust
+// From insert_zed_terminal_env
+pub fn insert_zed_terminal_env(
+    env: &mut HashMap<String, String>,
+    version: &impl std::fmt::Display,
+) {
+    env.insert("ZED_TERM".to_string(), "true".to_string());
+    env.insert("TERM_PROGRAM".to_string(), "zed".to_string());
+    env.insert("TERM".to_string(), "xterm-256color".to_string());
+    env.insert("COLORTERM".to_string(), "truecolor".to_string());
+    env.insert("TERM_PROGRAM_VERSION".to_string(), version.to_string());
+}
+```
+
+Glass automatically sets terminal environment variables:
+
+<CardGroup cols={2}>
+  <Card title="Terminal Identity" icon="terminal">
+    - `ZED_TERM=true`: Identifies Glass terminal
+    - `TERM_PROGRAM=zed`: Program name
+    - `TERM_PROGRAM_VERSION`: Glass version
+  </Card>
+  <Card title="Capabilities" icon="palette">
+    - `TERM=xterm-256color`: 256 color support
+    - `COLORTERM=truecolor`: True color support
+  </Card>
+</CardGroup>
+
+### Terminal Bounds
+
+```rust
+pub struct TerminalBounds {
+    pub cell_width: Pixels,
+    pub line_height: Pixels,
+    pub bounds: Bounds<Pixels>,
+}
+
+impl TerminalBounds {
+    pub fn num_lines(&self) -> usize
+    pub fn num_columns(&self) -> usize
+}
+```
+
+Terminal dimensions are calculated from:
+
+- Cell width and line height
+- Available viewport bounds
+- Font metrics from settings
+
+## Shell Integration
+
+### Task Spawning
+
+```rust
+use task::{HideStrategy, Shell, SpawnInTerminal};
+```
+
+Run tasks in the terminal:
+
+- **Shell Selection**: Choose bash, zsh, fish, or custom shells
+- **Hide Strategy**: Control terminal visibility
+- **Environment**: Custom environment variables
+- **Working Directory**: Set task working directory
+
+### Shell Environment
+
+```rust
+async fn shell_env(&self) -> Vec<(String, String)>
+```
+
+Glass provides shell environment through the worktree delegate:
+
+- Inherits system PATH
+- Includes project-specific environment
+- Merges user shell configuration
+
+## Hyperlink Support
+
+### Link Detection
+
+```rust
+// From terminal_hyperlinks
+pub struct RegexSearches {
+    // URL and path detection
+}
+
+pub enum MaybeNavigationTarget {
+    Url(String),
+    PathLike(PathLikeTarget),
+}
+```
+
+The terminal automatically detects:
+
+<Steps>
+  <Step title="URLs">
+    HTTP, HTTPS, git, and other protocol URLs
+  </Step>
+  <Step title="File Paths">
+    Absolute and relative file paths, including line numbers
+  </Step>
+  <Step title="Opening">
+    Click or use `Open` event to navigate to links
+  </Step>
+</Steps>
+
+### Path Navigation
+
+```rust
+pub struct PathLikeTarget {
+    pub maybe_path: String,
+    pub terminal_dir: Option<PathBuf>,
+}
+```
+
+Path detection supports:
+
+- Relative paths (resolved from terminal working directory)
+- Absolute paths
+- Line and column numbers: `file.rs:10:5`
+- Non-existent paths (for creating new files)
+
+<Tip>
+Cmd/Ctrl+Click on file paths to open them directly in the editor.
+</Tip>
+
+## Terminal Events
+
+### Event System
+
+```rust
+pub enum Event {
+    TitleChanged,
+    BreadcrumbsChanged,
+    CloseTerminal,
+    Bell,
+    Wakeup,
+    BlinkChanged(bool),
+    SelectionsChanged,
+    NewNavigationTarget(Option<MaybeNavigationTarget>),
+    Open(MaybeNavigationTarget),
+}
+```
+
+The terminal emits events for:
+
+<CardGroup cols={2}>
+  <Card title="Display Updates" icon="desktop">
+    - Title changes (from shell)
+    - Breadcrumb navigation changes
+    - Cursor blink state changes
+  </Card>
+  <Card title="User Interaction" icon="hand-pointer">
+    - Selection changes
+    - Navigation target detection
+    - Open requests
+    - Bell notifications
+  </Card>
+</CardGroup>
+
+## Terminal Lifecycle
+
+### Process Management
+
+```rust
+pub struct PtyProcessInfo {
+    // Process information tracking
+}
+
+pub trait ProcessIdGetter {
+    // Get process ID for terminal
+}
+```
+
+Terminal lifecycle:
+
+<Steps>
+  <Step title="Spawn">
+    Shell process is spawned with PTY
+  </Step>
+  <Step title="Active">
+    Terminal processes input/output
+  </Step>
+  <Step title="Exit">
+    Process exit is detected and reported
+  </Step>
+  <Step title="Cleanup">
+    Terminal can be closed or restarted
+  </Step>
+</Steps>
+
+### Exit Status
+
+```rust
+pub struct TerminalError {
+    pub directory: Option<PathBuf>,
+    pub program: Option<String>,
+    pub args: Option<Vec<String>>,
+    pub title_override: Option<String>,
+    pub source: std::io::Error,
+}
+```
+
+Terminal errors provide context:
+
+- Working directory
+- Program and arguments
+- Custom title (if set)
+- Underlying IO error
+
+## Mouse and Keyboard
+
+### Mouse Support
+
+```rust
+// From mappings/mouse
+alt_scroll,
+grid_point,
+mouse_button_report,
+mouse_moved_report,
+scroll_report,
+```
+
+Mouse features:
+
+- **Click and Drag**: Text selection
+- **Scroll**: Navigate terminal history
+- **Button Reports**: Mouse events sent to shell programs
+- **Alt+Scroll**: Alternative scrolling mode
+
+### Keyboard Input
+
+```rust
+// From mappings/keys
+to_esc_str
+```
+
+Keyboard handling:
+
+- Full keyboard input support
+- Escape sequence generation
+- Modifier key support
+- Application keypad mode
+
+## Terminal Settings
+
+### Configuration Options
+
+```rust
+// From terminal_settings
+pub struct TerminalSettings {
+    // Terminal configuration
+}
+
+pub enum AlternateScroll {
+    // Scroll behavior configuration
+}
+
+pub enum CursorShape {
+    // Cursor appearance
+}
+```
+
+Customizable settings:
+
+<Tabs>
+  <Tab title="Appearance">
+    - Cursor shape (block, beam, underline)
+    - Font family and size
+    - Color scheme
+    - Cursor blinking
+  </Tab>
+  <Tab title="Behavior">
+    - Scroll behavior
+    - Alternate scroll mode
+    - Shell selection
+    - Working directory
+  </Tab>
+</Tabs>
+
+## Selection
+
+### Selection Types
+
+```rust
+// From Alacritty integration
+use alacritty_terminal::selection::{
+    Selection,
+    SelectionRange,
+    SelectionType,
+};
+```
+
+Selection modes:
+
+- **Simple**: Click and drag
+- **Semantic**: Double-click for words
+- **Lines**: Triple-click for lines
+- **Block**: Rectangular selection
+
+### Copy Behavior
+
+```rust
+InternalEvent::Copy(Option<bool>)
+```
+
+- Copy selection to clipboard
+- Optional: keep selection after copy
+- Automatic newline handling
+- Trimming whitespace
+
+## Advanced Features
+
+### Search
+
+Search within terminal output:
+
+```rust
+use alacritty_terminal::term::search::{
+    Match,
+    RegexIter,
+    RegexSearch,
+};
+```
+
+- Regex search support
+- Navigate between matches
+- Highlight search results
+- Case-sensitive and insensitive modes
+
+### Scrollback Buffer
+
+The terminal maintains a scrollback buffer:
+
+- Configurable buffer size
+- Efficient memory usage
+- Fast search and navigation
+- Persistent across clear operations
+
+### Color Support
+
+```rust
+// From mappings/colors
+to_alac_rgb
+```
+
+Comprehensive color support:
+
+- 256 color palette
+- True color (24-bit RGB)
+- Theme integration
+- Custom color schemes
+
+## Integration with Editor
+
+### Working Directory
+
+The terminal tracks the current working directory:
+
+- Used for relative path resolution
+- Hyperlink navigation
+- Task spawning
+- Editor-terminal synchronization
+
+### Breadcrumbs
+
+```rust
+Event::BreadcrumbsChanged
+```
+
+Breadcrumb navigation shows:
+
+- Current working directory
+- Active shell
+- Running processes
+
+### Opening Files
+
+Seamless integration with the editor:
+
+<Steps>
+  <Step title="Detect">
+    Terminal detects file paths in output
+  </Step>
+  <Step title="Hover">
+    Paths are highlighted on hover
+  </Step>
+  <Step title="Click">
+    Click to open file in editor
+  </Step>
+  <Step title="Navigate">
+    Jump to specific line/column if specified
+  </Step>
+</Steps>
+
+<Note>
+File paths like `src/main.rs:42:10` will open the file at line 42, column 10.
+</Note>
+
+## Best Practices
+
+### Terminal Usage
+
+- Use multiple terminal instances for different tasks
+- Leverage shell integration for tasks
+- Configure shell RC files to customize environment
+- Use hyperlinks for quick file navigation
+
+### Performance
+
+- Terminal rendering is optimized for large outputs
+- Scrollback buffer is memory-efficient
+- Regex search is lazy and fast
+- Color rendering uses GPU acceleration
+
+<Warning>
+Very long lines (>1024 characters) may impact terminal performance.
+</Warning>

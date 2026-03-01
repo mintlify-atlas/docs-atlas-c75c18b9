@@ -1,0 +1,381 @@
+---
+title: Building Theme Extensions
+description: Create custom color schemes and icon themes for Glass code editor
+---
+
+## Building Theme Extensions
+
+Theme extensions allow you to create custom color schemes and icon themes for Glass. Themes can be distributed as standalone extensions or bundled with other extension features.
+
+## Theme Types
+
+Glass supports two types of themes:
+
+- **Color Themes** - Define syntax highlighting, UI colors, and editor appearance
+- **Icon Themes** - Provide custom file and folder icons for the file tree
+
+## Creating a Color Theme
+
+<Steps>
+
+### Create the extension structure
+
+Create your extension directory with a `themes/` folder:
+
+```
+my-theme-extension/
+  extension.toml
+  themes/
+    my-theme.json
+```
+
+<Note>
+Theme extension IDs should be suffixed with `-theme` (e.g., `monokai-theme`).
+</Note>
+
+### Define extension.toml
+
+Create a minimal `extension.toml` for a theme-only extension:
+
+```toml
+id = "my-theme"
+name = "My Theme"
+version = "0.1.0"
+schema_version = 1
+authors = ["Your Name <you@example.com>"]
+description = "A beautiful color theme for Glass"
+repository = "https://github.com/your-name/my-theme"
+```
+
+### Create the theme file
+
+Create `themes/my-theme.json` with your theme definition:
+
+```json
+{
+  "name": "My Theme",
+  "author": "Your Name",
+  "themes": [
+    {
+      "name": "My Theme Dark",
+      "appearance": "dark",
+      "style": {
+        "background": "#1e1e1e",
+        "foreground": "#d4d4d4",
+        "cursor": "#ffffff",
+        "selection": "#264f78",
+        "comment": "#6a9955",
+        "string": "#ce9178",
+        "number": "#b5cea8",
+        "keyword": "#569cd6",
+        "function": "#dcdcaa",
+        "type": "#4ec9b0",
+        "variable": "#9cdcfe",
+        "operator": "#d4d4d4"
+      }
+    },
+    {
+      "name": "My Theme Light",
+      "appearance": "light",
+      "style": {
+        "background": "#ffffff",
+        "foreground": "#000000",
+        "cursor": "#000000",
+        "selection": "#add6ff",
+        "comment": "#008000",
+        "string": "#a31515",
+        "number": "#098658",
+        "keyword": "#0000ff",
+        "function": "#795e26",
+        "type": "#267f99",
+        "variable": "#001080",
+        "operator": "#000000"
+      }
+    }
+  ]
+}
+```
+
+</Steps>
+
+## Theme File Structure
+
+The theme JSON file contains:
+
+- `name` - Theme family name
+- `author` - Theme creator name
+- `themes` - Array of theme variants (dark/light)
+
+Each theme variant includes:
+
+- `name` - Variant name (shown in the theme picker)
+- `appearance` - Either `"dark"` or `"light"`
+- `style` - Color definitions for syntax and UI elements
+
+## Syntax Highlighting Colors
+
+These colors map to Tree-sitter captures:
+
+| Property | Description | Example |
+|----------|-------------|----------|
+| `comment` | Comments | `#6a9955` |
+| `comment.doc` | Documentation comments | `#6a9955` |
+| `string` | String literals | `#ce9178` |
+| `string.escape` | Escape sequences | `#d7ba7d` |
+| `string.regex` | Regular expressions | `#d16969` |
+| `number` | Numeric literals | `#b5cea8` |
+| `boolean` | Boolean values | `#569cd6` |
+| `keyword` | Language keywords | `#569cd6` |
+| `operator` | Operators | `#d4d4d4` |
+| `function` | Function names | `#dcdcaa` |
+| `type` | Type names | `#4ec9b0` |
+| `type.builtin` | Built-in types | `#569cd6` |
+| `variable` | Variables | `#9cdcfe` |
+| `variable.special` | Special variables | `#9cdcfe` |
+| `variable.parameter` | Function parameters | `#9cdcfe` |
+| `property` | Object properties | `#9cdcfe` |
+| `constructor` | Constructors | `#4ec9b0` |
+| `constant` | Constants | `#4fc1ff` |
+| `constant.builtin` | Built-in constants | `#569cd6` |
+| `tag` | HTML/XML tags | `#569cd6` |
+| `attribute` | HTML/XML attributes | `#9cdcfe` |
+| `label` | Labels | `#c8c8c8` |
+| `punctuation` | Punctuation | `#d4d4d4` |
+| `punctuation.bracket` | Brackets | `#ffd700` |
+| `punctuation.delimiter` | Delimiters | `#d4d4d4` |
+
+## UI Colors
+
+Define colors for the editor interface:
+
+```json
+{
+  "style": {
+    "background": "#1e1e1e",
+    "foreground": "#d4d4d4",
+    "cursor": "#ffffff",
+    "selection": "#264f78",
+    "line_highlight": "#2a2a2a",
+    "match_highlight": "#515c6a",
+    "search_match": "#4b3f2f",
+    "active_line_number": "#c6c6c6",
+    "line_number": "#858585",
+    "gutter_background": "#1e1e1e",
+    "border": "#454545",
+    "scrollbar": "#424242",
+    "panel_background": "#252526",
+    "tab_active_background": "#1e1e1e",
+    "tab_inactive_background": "#2d2d2d",
+    "status_bar_background": "#007acc",
+    "title_bar_background": "#3c3c3c"
+  }
+}
+```
+
+## Programmatic Theme Loading
+
+For advanced theme extensions that need to generate themes programmatically, you can use Rust code:
+
+<Steps>
+
+### Add dependencies
+
+Update your `Cargo.toml`:
+
+```toml
+[dependencies]
+zed_extension_api = "0.7.0"
+```
+
+### Implement the extension
+
+Create `src/lib.rs`:
+
+```rust
+use zed_extension_api as zed;
+
+struct MyThemeExtension;
+
+impl zed::Extension for MyThemeExtension {
+    fn new() -> Self {
+        Self
+    }
+}
+
+zed::register_extension!(MyThemeExtension);
+```
+
+</Steps>
+
+<Note>
+For most theme extensions, static JSON files in the `themes/` directory are sufficient. Programmatic loading is only needed for themes generated at runtime.
+</Note>
+
+## Creating Icon Themes
+
+Icon themes provide custom icons for files and folders in the project panel.
+
+<Steps>
+
+### Create the icon theme structure
+
+```
+my-icon-theme/
+  extension.toml
+  icon-themes/
+    my-icons.json
+    icons/
+      file.svg
+      folder.svg
+      folder-open.svg
+      javascript.svg
+      rust.svg
+```
+
+### Define the icon theme
+
+Create `icon-themes/my-icons.json`:
+
+```json
+{
+  "name": "My Icons",
+  "themes": [
+    {
+      "name": "My Icons",
+      "icons": {
+        "file": "icons/file.svg",
+        "folder": "icons/folder.svg",
+        "folder_open": "icons/folder-open.svg",
+        "extensions": {
+          "js": "icons/javascript.svg",
+          "ts": "icons/typescript.svg",
+          "rs": "icons/rust.svg",
+          "py": "icons/python.svg"
+        },
+        "filenames": {
+          "Cargo.toml": "icons/cargo.svg",
+          "package.json": "icons/npm.svg"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Add SVG icons
+
+Create SVG files in the `icons/` directory. Icons should be simple, monochromatic, and sized appropriately (typically 16x16 or 24x24).
+
+</Steps>
+
+## Testing Your Theme
+
+<Steps>
+
+### Install as dev extension
+
+Press `Cmd+Shift+P` and run **Extensions: Install Dev Extension**, then select your theme directory.
+
+### Select your theme
+
+Open the theme picker:
+- Press `Cmd+K, Cmd+T` (macOS)
+- Or `Ctrl+K, Ctrl+T` (Linux/Windows)
+
+Your theme should appear in the list.
+
+### Test in different contexts
+
+Verify your theme works well with:
+- Different file types (Rust, JavaScript, Markdown, etc.)
+- Dark and light system themes
+- Different UI panels (terminal, assistant, file tree)
+
+</Steps>
+
+## Theme Best Practices
+
+<Warning>
+**Accessibility Considerations**
+
+- Ensure sufficient contrast between foreground and background colors (WCAG AA: 4.5:1 for normal text)
+- Test with colorblindness simulators
+- Provide both dark and light variants
+</Warning>
+
+<Tip>
+**Design Tips**
+
+- Use a limited color palette (6-8 colors) for consistency
+- Reserve bright colors for important elements
+- Keep syntax highlighting subtle to reduce eye strain
+- Test with real code files, not just examples
+</Tip>
+
+## Example: Complete Theme Extension
+
+Here's a complete minimal theme extension:
+
+<CodeGroup>
+
+```toml extension.toml
+id = "sunset-theme"
+name = "Sunset Theme"
+version = "0.1.0"
+schema_version = 1
+authors = ["Your Name <you@example.com>"]
+description = "Warm sunset colors for your code"
+repository = "https://github.com/you/sunset-theme"
+```
+
+```json themes/sunset.json
+{
+  "name": "Sunset",
+  "author": "Your Name",
+  "themes": [
+    {
+      "name": "Sunset Dark",
+      "appearance": "dark",
+      "style": {
+        "background": "#2b1e1e",
+        "foreground": "#f4e4d4",
+        "cursor": "#ff8c42",
+        "selection": "#5c3d37",
+        "comment": "#8b7355",
+        "string": "#f4a261",
+        "number": "#e76f51",
+        "keyword": "#ff8c42",
+        "function": "#ffd166",
+        "type": "#2a9d8f",
+        "variable": "#f4e4d4",
+        "operator": "#ff8c42"
+      }
+    }
+  ]
+}
+```
+
+```toml Cargo.toml
+[package]
+name = "sunset-theme"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+zed_extension_api = "0.7.0"
+```
+
+</CodeGroup>
+
+## Publishing Your Theme
+
+See the [Publishing Extensions](/extensions/publishing) guide for instructions on sharing your theme with the Glass community.
+
+## See Also
+
+- [Theme Gallery](https://zed.dev/extensions?filter=themes) - Browse published themes
+- [Color Contrast Checker](https://webaim.org/resources/contrastchecker/) - Verify accessibility
+- [Glass Built-in Themes](https://github.com/zed-industries/zed/tree/main/assets/themes) - Reference implementations

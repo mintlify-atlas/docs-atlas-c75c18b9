@@ -1,0 +1,259 @@
+---
+title: Keybindings
+description: Customize keyboard shortcuts and keybindings in Glass
+---
+
+Glass provides a flexible keybinding system that allows you to customize keyboard shortcuts for any action. You can use preset keymaps from other editors or create your own custom bindings.
+
+## Base Keymap
+
+Glass supports several base keymaps that provide familiar shortcuts from other editors:
+
+```json settings.json
+{
+  "base_keymap": "VSCode"
+}
+```
+
+<ParamField path="base_keymap" type="string" default="VSCode">
+  Available options:
+  - `"VSCode"` - Visual Studio Code keybindings
+  - `"Atom"` - Atom editor keybindings
+  - `"JetBrains"` - JetBrains IDEs keybindings
+  - `"SublimeText"` - Sublime Text keybindings
+  - `"TextMate"` - TextMate keybindings
+  - `"None"` - Minimal default keybindings
+</ParamField>
+
+<Note>
+  The base keymap provides default keybindings. Your custom keybindings in `keymap.json` will override these defaults.
+</Note>
+
+## Keymap File
+
+Custom keybindings are defined in `~/.config/glass/keymap.json` (or equivalent on your platform). The keymap file contains an array of binding contexts:
+
+```json keymap.json
+[
+  {
+    "context": "Workspace",
+    "bindings": {
+      "ctrl-shift-p": "command_palette::Toggle",
+      "ctrl-p": "file_finder::Toggle"
+    }
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl-/": "editor::ToggleComments",
+      "ctrl-d": "editor::SelectNext"
+    }
+  }
+]
+```
+
+## Binding Structure
+
+Each keybinding consists of:
+
+1. **Context** - Where the keybinding is active
+2. **Keystroke** - The key combination to trigger the action
+3. **Action** - The command to execute
+4. **Arguments** (optional) - Parameters passed to the action
+
+### Context Predicates
+
+Contexts determine when keybindings are active. Common contexts include:
+
+- `Workspace` - Active in any workspace
+- `Editor` - Active when an editor has focus
+- `Terminal` - Active in terminal panes
+- `Picker` - Active in pickers and modals
+- `ProjectPanel` - Active in the file tree
+- `Pane` - Active in any pane
+
+Contexts can be combined with predicates:
+
+```json keymap.json
+[
+  {
+    "context": "Editor && vim_mode == normal",
+    "bindings": {
+      "space f f": "file_finder::Toggle"
+    }
+  }
+]
+```
+
+Supported operators:
+- `&&` - Logical AND
+- `||` - Logical OR
+- `!` - Logical NOT
+- `==` - Equality check
+- `!=` - Inequality check
+
+## Keystroke Syntax
+
+Keybindings use a string format with modifiers and keys:
+
+<CodeGroup>
+```text Single Key
+ctrl-s
+alt-enter
+shift-tab
+```
+
+```text Multiple Keys
+ctrl-k ctrl-s
+space f f
+ctrl-k s
+```
+
+```text Special Keys
+backspace
+delete
+escape
+enter
+tab
+space
+pageup
+pagedown
+home
+end
+f1 - f12
+```
+</CodeGroup>
+
+### Platform Modifiers
+
+Modifiers adapt to your platform:
+
+- `ctrl` - Control on Linux/Windows, Command on macOS
+- `alt` - Alt on Linux/Windows, Option on macOS
+- `shift` - Shift on all platforms
+- `cmd` - Command (macOS only)
+
+<Tip>
+  Use `ctrl` for cross-platform keybindings. It automatically maps to Command on macOS and Control on other platforms.
+</Tip>
+
+## Action Arguments
+
+Many actions accept optional arguments:
+
+```json keymap.json
+[
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl-enter": ["editor::Newline", { "direction": "above" }],
+      "shift-delete": ["editor::Delete", { "ignore_newlines": true }],
+      "ctrl-=": ["zed::IncreaseBufferFontSize", { "persist": false }]
+    }
+  }
+]
+```
+
+When arguments are provided, the action is specified as an array with the action name and an object containing the arguments.
+
+## Keymap Editor
+
+Glass includes a visual keymap editor for managing keybindings:
+
+**Open the keymap editor:**
+- Command Palette: `zed: open keymap`
+- Menu: Settings → Keymap
+
+### Features
+
+<Tabs>
+  <Tab title="Search & Filter">
+    - **Action search** - Filter by action name with fuzzy matching
+    - **Keystroke search** - Find bindings by keyboard shortcut
+    - **Conflict filter** - Show only conflicting keybindings
+    - **Exact matching** - Toggle exact keystroke matching
+  </Tab>
+  
+  <Tab title="Edit Bindings">
+    - **Create** - Add new keybindings for any action
+    - **Edit** - Modify existing keybindings
+    - **Delete** - Remove custom keybindings
+    - **Copy** - Copy action names and contexts
+  </Tab>
+  
+  <Tab title="Conflict Detection">
+    The keymap editor automatically detects and highlights conflicting keybindings:
+    
+    - **User conflicts** - Multiple user keybindings for the same keys/context
+    - **Override conflicts** - User keybindings that override base keymap
+    - **Context conflicts** - Bindings that match in overlapping contexts
+  </Tab>
+</Tabs>
+
+The keymap editor is implemented in `crates/keymap_editor/` and provides real-time validation and conflict detection.
+
+## Common Actions
+
+Frequently customized actions:
+
+<CodeGroup>
+```json File Operations
+{
+  "ctrl-p": "file_finder::Toggle",
+  "ctrl-shift-p": "command_palette::Toggle",
+  "ctrl-s": "workspace::Save",
+  "ctrl-shift-s": "workspace::SaveAs"
+}
+```
+
+```json Editor Actions
+{
+  "ctrl-/": "editor::ToggleComments",
+  "ctrl-d": "editor::SelectNext",
+  "ctrl-shift-k": "editor::DeleteLine",
+  "alt-up": "editor::MoveLineUp",
+  "alt-down": "editor::MoveLineDown"
+}
+```
+
+```json Navigation
+{
+  "ctrl-tab": "pane::ActivateNextItem",
+  "ctrl-shift-tab": "pane::ActivatePrevItem",
+  "ctrl-1": "pane::ActivateItem_1",
+  "ctrl-0": "pane::ActivateLastItem"
+}
+```
+</CodeGroup>
+
+## Discovering Actions
+
+To find action names for keybindings:
+
+1. **Command Palette** - Search for commands and view their action names
+2. **Keymap Editor** - Browse all available actions
+3. **Default Keymap** - View the base keymap with `zed: open default keymap`
+4. **Documentation** - Action names are listed with keyboard shortcuts throughout the docs
+
+<Tip>
+  Many UI elements show keyboard shortcuts in tooltips. Hover over buttons and menu items to see associated actions.
+</Tip>
+
+## Keymap File Location
+
+Keymap configuration files are stored in:
+
+- **Linux:** `~/.config/glass/keymap.json`
+- **macOS:** `~/Library/Application Support/Glass/keymap.json`
+- **Windows:** `%APPDATA%\Glass\keymap.json`
+
+The default keymaps are located in `assets/keymaps/` in the source tree:
+- `default-macos.json`
+- `default-linux.json`
+- `default-windows.json`
+
+## Reloading Keymaps
+
+Keybindings are automatically reloaded when you save your `keymap.json` file. Changes take effect immediately without restarting Glass.
+
+The keymap system is managed by the `KeymapFile` and `SettingsStore` in `crates/settings/`, with live reload triggered through the `KeymapEventChannel`.

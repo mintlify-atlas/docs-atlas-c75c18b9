@@ -1,0 +1,184 @@
+---
+title: Extension System Overview
+description: Learn about Glass's powerful extension system and how it enables customization and enhanced functionality
+---
+
+Glass features a powerful extension system that allows you to customize and extend the editor's functionality. Extensions can add language support, themes, icon themes, slash commands, debug adapters, and more.
+
+## What Are Extensions?
+
+Extensions are packages that enhance Glass with additional features. They can provide:
+
+<CardGroup cols={2}>
+  <Card title="Language Support" icon="code">
+    Add syntax highlighting, code intelligence, and language servers for programming languages
+  </Card>
+  <Card title="Themes" icon="palette">
+    Customize the editor's appearance with color themes and icon themes
+  </Card>
+  <Card title="Slash Commands" icon="terminal">
+    Extend the assistant with custom slash commands for specialized tasks
+  </Card>
+  <Card title="Debug Adapters" icon="bug">
+    Add debugging capabilities for different programming languages and platforms
+  </Card>
+  <Card title="Context Servers" icon="server">
+    Integrate Model Context Protocol (MCP) servers for AI capabilities
+  </Card>
+  <Card title="Snippets" icon="file-code">
+    Add code snippets for faster development
+  </Card>
+</CardGroup>
+
+## Extension Architecture
+
+Glass's extension system is built on WebAssembly (WASM) for security and performance. Extensions run in isolated sandboxes and communicate with the editor through a well-defined API.
+
+### Extension Types
+
+**Published Extensions**
+
+Published extensions are distributed through the Glass extension registry. They are:
+- Downloaded and installed automatically
+- Verified and sandboxed for security
+- Easy to install and update
+- Available to all Glass users
+
+**Development Extensions**
+
+Development (dev) extensions are local extensions you're building or testing. They:
+- Run from a local directory
+- Support hot-reloading during development
+- Can override published extensions with the same ID
+- Require compilation before installation
+
+<Note>
+When you install a dev extension with the same ID as a published extension, the dev version takes precedence.
+</Note>
+
+## Extension Capabilities
+
+Extensions declare their capabilities in an `extension.toml` manifest file. This includes:
+
+### Languages and Grammars
+
+Extensions can add support for new programming languages by providing:
+- Language configuration (file extensions, comment syntax, etc.)
+- Tree-sitter grammars for syntax highlighting
+- Language server integration for code intelligence
+
+**Example**: The Python extension provides syntax highlighting, IntelliSense, and language server support.
+
+### Themes and Icons
+
+Customize Glass's appearance:
+- **Color themes** control editor colors, syntax highlighting, and UI elements
+- **Icon themes** provide custom file and folder icons
+
+### Slash Commands
+
+Extend the AI assistant with custom commands. For example:
+- `/docs` - Search and insert documentation
+- `/explain` - Explain code in context
+- Custom commands for your workflow
+
+### Debug Adapters
+
+Extensions can add debugging support through the Debug Adapter Protocol (DAP):
+- Set breakpoints
+- Step through code
+- Inspect variables
+- View call stacks
+
+### Context Servers (MCP)
+
+Model Context Protocol servers provide AI models with external context:
+- File system access
+- Database connections
+- API integrations
+- Custom data sources
+
+## Extension Lifecycle
+
+Glass manages extensions automatically:
+
+<Steps>
+  <Step title="Discovery">
+    Browse available extensions in the Extensions view or through the command palette
+  </Step>
+  <Step title="Installation">
+    Extensions are downloaded, verified, and installed to `~/.config/glass/extensions/installed/`
+  </Step>
+  <Step title="Loading">
+    Extensions are loaded on startup and their resources are registered with the editor
+  </Step>
+  <Step title="Updates">
+    Glass checks for updates periodically and can auto-update extensions
+  </Step>
+</Steps>
+
+### Extension Storage
+
+Extensions are stored in specific directories:
+
+```bash
+~/.config/glass/extensions/
+├── installed/          # Published extensions
+│   ├── extension-id/
+│   └── another-extension/
+├── work/              # Extension runtime data
+└── index.json         # Extension index cache
+```
+
+## Extension Settings
+
+You can configure extension behavior in your Glass settings:
+
+```json
+{
+  "extensions": {
+    "auto_update": true,
+    "auto_install_extensions": {
+      "html": true,
+      "graphql": true
+    }
+  }
+}
+```
+
+### Auto-Installation
+
+Glass can automatically install essential extensions on first launch. This provides out-of-the-box support for common languages and features.
+
+### Auto-Updates
+
+By default, Glass automatically checks for and installs extension updates. You can disable this per-extension or globally.
+
+<Warning>
+Development extensions are never auto-updated. You must manually rebuild them when needed.
+</Warning>
+
+## Schema Versions
+
+Extensions declare a schema version in their manifest. Glass supports:
+- **Schema version 0**: Legacy extensions (deprecated)
+- **Schema version 1**: Current extension format
+
+Glass only loads extensions with compatible schema versions. This ensures stability as the extension API evolves.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installing Extensions" icon="download" href="/extensions/installing">
+    Learn how to discover and install extensions
+  </Card>
+  <Card title="Managing Extensions" icon="gear" href="/extensions/managing">
+    Manage, update, and configure your installed extensions
+  </Card>
+  <Card title="Building Extensions" icon="hammer" href="/extensions/getting-started">
+    Create your own extensions for Glass
+  </Card>
+  <Card title="Extension API" icon="book" href="/extensions/api/overview">
+    Explore the extension API reference
+  </Card>
+</CardGroup>

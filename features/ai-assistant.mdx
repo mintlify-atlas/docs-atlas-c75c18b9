@@ -1,0 +1,397 @@
+---
+title: AI Assistant
+description: Integrated AI-powered coding assistance with agent capabilities, context awareness, and intelligent code generation
+---
+
+## Overview
+
+Glass features a powerful AI assistant system that provides intelligent code assistance, automated refactoring, and context-aware code generation. The assistant leverages multiple language models and integrates deeply with the editor for seamless coding workflows.
+
+## Agent Architecture
+
+### Native Agent System
+
+```rust
+// From crates/agent/src/agent.rs
+pub struct NativeAgent {
+    sessions: HashMap<acp::SessionId, Session>,
+    thread_store: Entity<ThreadStore>,
+    project_context: Entity<ProjectContext>,
+    templates: Arc<Templates>,
+    models: LanguageModels,
+    // ...
+}
+```
+
+The AI assistant is built on a native agent architecture:
+
+<CardGroup cols={2}>
+  <Card title="Sessions" icon="comments">
+    - Multiple concurrent conversation threads
+    - Session-based context isolation
+    - Persistent thread history
+  </Card>
+  <Card title="Context" icon="folder-tree">
+    - Project-aware context gathering
+    - Worktree snapshots
+    - Rules and prompts integration
+  </Card>
+</CardGroup>
+
+### Thread Management
+
+```rust
+struct Session {
+    thread: Entity<Thread>,
+    acp_thread: Entity<acp_thread::AcpThread>,
+    pending_save: Task<()>,
+    _subscriptions: Vec<Subscription>,
+}
+```
+
+Each AI conversation is managed as a thread:
+
+- **Internal Thread**: Processes user messages and agent responses
+- **ACP Thread**: Handles Agent Client Protocol communication
+- **Auto-Save**: Threads are automatically saved
+- **Event Subscriptions**: Real-time updates on thread changes
+
+## Language Models
+
+### Model Selection
+
+```rust
+pub struct LanguageModels {
+    models: HashMap<acp::ModelId, Arc<dyn LanguageModel>>,
+    model_list: acp_thread::AgentModelList,
+    refresh_models_rx: watch::Receiver<()>,
+    // ...
+}
+```
+
+Glass supports multiple language model providers:
+
+<Tabs>
+  <Tab title="Recommended Models">
+    The system curates a list of recommended models across providers for optimal performance on coding tasks.
+  </Tab>
+  <Tab title="All Models">
+    Browse all available models grouped by provider:
+    - Anthropic (Claude)
+    - OpenAI (GPT)
+    - Ollama (Local models)
+    - And more...
+  </Tab>
+</Tabs>
+
+### Model Information
+
+```rust
+pub struct AgentModelInfo {
+    id: acp::ModelId,
+    name: SharedString,
+    description: Option<SharedString>,
+    icon: Option<AgentModelIcon>,
+    is_latest: bool,
+    cost: Option<SharedString>,
+}
+```
+
+Each model provides:
+
+- **Name and Description**: Clear identification
+- **Icon**: Visual representation
+- **Version Status**: Know if you're using the latest version
+- **Cost Information**: Understand pricing for commercial models
+
+### Model Authentication
+
+The system automatically authenticates with model providers:
+
+```rust
+fn authenticate_all_language_model_providers(cx: &mut App) -> Task<()>
+```
+
+<Note>
+Providers like Ollama and LM Studio are automatically detected on your local machine.
+</Note>
+
+## Edit Agent
+
+The Edit Agent specializes in code transformations:
+
+### Code Editing Capabilities
+
+<Steps>
+  <Step title="Parse Edit Request">
+    Understands natural language descriptions of desired code changes
+  </Step>
+  <Step title="Analyze Context">
+    Examines surrounding code and project structure
+  </Step>
+  <Step title="Generate Edit">
+    Produces precise code modifications
+  </Step>
+  <Step title="Apply Changes">
+    Integrates changes with conflict resolution
+  </Step>
+</Steps>
+
+### Edit Prediction
+
+Real-time code suggestions as you type:
+
+```rust
+// Edit prediction modes
+pub enum EditPredictionsMode {
+    Disabled,
+    Enabled,
+    // ...
+}
+```
+
+- **Inline Predictions**: See suggestions directly in the editor
+- **Accept Prediction**: `AcceptEditPrediction` action
+- **Partial Acceptance**: `AcceptNextWordEditPrediction` or `AcceptNextLineEditPrediction`
+- **Navigation**: Move between predictions with `NextEditPrediction` / `PreviousEditPrediction`
+
+<Tip>
+Toggle edit predictions on/off with the `ToggleEditPrediction` action from the editor.
+</Tip>
+
+## Project Context
+
+### Context Gathering
+
+```rust
+pub struct ProjectContext {
+    pub worktree_snapshots: Vec<TelemetryWorktreeSnapshot>,
+    pub timestamp: DateTime<Utc>,
+}
+```
+
+The AI assistant automatically gathers project context:
+
+<CardGroup cols={2}>
+  <Card title="File System" icon="folder">
+    - Directory structure
+    - File types and organization
+    - Git repository information
+  </Card>
+  <Card title="Code Context" icon="code">
+    - Open files and recent edits
+    - Language configurations
+    - Diagnostic information
+  </Card>
+</CardGroup>
+
+### Rules and Prompts
+
+```rust
+use prompt_store::{
+    ProjectContext,
+    PromptStore,
+    RULES_FILE_NAMES,
+    RulesFileContext,
+    UserRulesContext,
+    WorktreeContext,
+};
+```
+
+Customize AI behavior with project-specific rules:
+
+- **`.rules` files**: Define project coding standards
+- **Custom prompts**: Create reusable prompt templates
+- **Worktree context**: Context specific to each workspace
+- **User rules**: Personal preferences across all projects
+
+## Slash Commands
+
+Extend the assistant with slash commands:
+
+### Built-in Commands
+
+```rust
+// From assistant_slash_commands
+- /default - Default assistant behavior
+- /diagnostics - Include current diagnostics
+- /file - Reference specific files
+- /fetch - Fetch external content
+- /delta - Show git changes
+```
+
+### Extension Slash Commands
+
+```rust
+// From extension manifest
+pub slash_commands: BTreeMap<Arc<str>, SlashCommandManifestEntry>,
+```
+
+Create custom slash commands via extensions:
+
+<Steps>
+  <Step title="Define Command">
+    Add slash command to extension manifest
+  </Step>
+  <Step title="Implement Handler">
+    Handle `run_slash_command` in extension code
+  </Step>
+  <Step title="Provide Completions">
+    Implement `complete_slash_command_argument` for autocomplete
+  </Step>
+</Steps>
+
+## Agent Servers
+
+Connect to external agent services:
+
+```rust
+// From extension manifest
+pub agent_servers: BTreeMap<Arc<str>, AgentServerManifestEntry>,
+```
+
+### Agent Server Features
+
+- **Custom Agents**: Integrate specialized AI agents
+- **External Services**: Connect to proprietary AI systems
+- **Tool Integration**: Provide custom tools to the agent
+
+## Context Servers
+
+Enhance agent context with external data sources:
+
+### Context Server Protocol
+
+```rust
+use context_server::ContextServerId;
+
+pub struct ContextServerRegistry {
+    // Manages available context servers
+}
+```
+
+Context servers provide:
+
+- **External Knowledge**: Database schemas, API docs, etc.
+- **Real-time Data**: Current metrics, logs, etc.
+- **Custom Context**: Project-specific information sources
+
+### Configuration
+
+```rust
+pub async fn context_server_configuration(
+    &self,
+    context_server_id: Arc<str>,
+    project: Arc<dyn ProjectDelegate>,
+) -> Result<Option<ContextServerConfiguration>>
+```
+
+## Usage and Limits
+
+### Edit Prediction Usage
+
+```rust
+pub struct EditPredictionUsage {
+    // Track usage of edit predictions
+}
+
+// From cloud_llm_client
+EDIT_PREDICTIONS_USAGE_AMOUNT_HEADER_NAME
+EDIT_PREDICTIONS_USAGE_LIMIT_HEADER_NAME
+```
+
+Track your edit prediction usage:
+
+- **Usage Monitoring**: See how many predictions you've used
+- **Limits**: Understand your plan limits
+- **Headers**: Usage information in API responses
+
+<Warning>
+Edit prediction features may be limited based on your subscription plan.
+</Warning>
+
+## Tool Permissions
+
+Control what the AI agent can do:
+
+```rust
+// From agent/tool_permissions
+pub struct ToolPermissions {
+    // Manages agent tool access
+}
+```
+
+- **Permission System**: Approve or deny agent tool usage
+- **Security**: Prevent unauthorized actions
+- **Auditing**: Track what tools the agent uses
+
+## Templates
+
+### Prompt Templates
+
+```rust
+pub struct Templates {
+    // Shared templates for all threads
+}
+```
+
+Reusable prompt templates for common tasks:
+
+- **Code Review**: Templates for reviewing code
+- **Refactoring**: Common refactoring patterns
+- **Documentation**: Generate documentation templates
+- **Testing**: Create test cases
+
+## Advanced Features
+
+### Outline Generation
+
+```rust
+// From agent/outline
+pub mod outline;
+```
+
+Generate code outlines and structure summaries for better context understanding.
+
+### Pattern Extraction
+
+```rust
+pub use pattern_extraction::*;
+pub use shell_command_parser::extract_commands;
+```
+
+Extract patterns from code:
+
+- Identify repeated code patterns
+- Extract shell commands from conversations
+- Recognize code templates
+
+## Best Practices
+
+### Effective AI Assistance
+
+<Steps>
+  <Step title="Provide Context">
+    Include relevant files and diagnostics in your requests
+  </Step>
+  <Step title="Use Slash Commands">
+    Leverage slash commands for specific tasks like `/file` or `/diagnostics`
+  </Step>
+  <Step title="Review Changes">
+    Always review AI-generated code before accepting
+  </Step>
+  <Step title="Customize Rules">
+    Create `.rules` files for project-specific AI behavior
+  </Step>
+</Steps>
+
+### Performance Tips
+
+- Use smaller models for simple tasks to reduce latency
+- Enable edit predictions for real-time assistance
+- Configure context servers for frequently needed information
+- Create templates for repetitive tasks
+
+<Tip>
+For the best results, provide clear, specific requests and include relevant code context.
+</Tip>

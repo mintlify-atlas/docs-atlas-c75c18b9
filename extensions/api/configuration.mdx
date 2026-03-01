@@ -1,0 +1,590 @@
+---
+title: Extension Configuration API
+description: Access user settings, workspace configuration, and manage extension state in Glass
+---
+
+## Overview
+
+The Configuration API allows extensions to:
+
+- Read user and workspace settings
+- Access language-specific configuration
+- Retrieve LSP server settings
+- Get context server configuration
+- Access worktree metadata and environment
+
+<Note>
+  All settings are read-only from extensions. Users configure settings through Glass's settings UI or configuration files.
+</Note>
+
+## Settings System
+
+Glass uses a hierarchical settings system:
+
+1. **Global settings** - Apply to all projects
+2. **Workspace settings** - Apply to a specific workspace folder
+3. **Language settings** - Override for specific programming languages
+4. **LSP settings** - Configure individual language servers
+
+Settings are merged with more specific settings overriding general ones.
+
+## Accessing Settings
+
+The `settings` module provides types for reading configuration:
+
+```rust
+use zed_extension_api::settings::{LspSettings, LanguageSettings, ContextServerSettings};
+```
+
+### LSP Settings
+
+Retrieve settings for a language server:
+
+```rust
+use zed_extension_api::{self as zed, settings::LspSettings};
+
+impl zed::Extension for MyExtension {
+    fn language_server_workspace_configuration(
+        &mut self,
+        server_id: &zed::LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> zed::Result<Option<zed::serde_json::Value>> {
+        let settings = LspSettings::for_worktree(
+            server_id.as_ref(),
+            worktree,
+        )?;
+
+        // Return user's configured settings
+        Ok(settings.settings)
+    }
+}
+```
+
+<ResponseField name="initialization_options" type="Option<serde_json::Value>">
+  Initialization options for the language server, sent during LSP initialization
+</ResponseField>
+
+<ResponseField name="settings" type="Option<serde_json::Value>">
+  Workspace configuration settings, sent in response to `workspace/configuration` requests
+</ResponseField>
+
+### Language Settings
+
+Get language-specific settings:
+
+```rust
+use zed_extension_api::settings::LanguageSettings;
+
+let settings = LanguageSettings::for_worktree(
+    Some("rust"),  // Language name, or None for default
+    worktree,
+)?;
+
+// Access tab size, formatter settings, etc.
+let tab_size = settings.tab_size;
+let use_tabs = settings.hard_tabs;
+```
+
+<ResponseField name="tab_size" type="u32">
+  Number of spaces per indent level
+</ResponseField>
+
+<ResponseField name="hard_tabs" type="bool">
+  Whether to use tabs (true) or spaces (false) for indentation
+</ResponseField>
+
+<ResponseField name="soft_wrap" type="Option<SoftWrap>">
+  Line wrapping configuration
+</ResponseField>
+
+<ResponseField name="preferred_line_length" type="u32">
+  Preferred line length for formatters and guides
+</ResponseField>
+
+<ResponseField name="formatter" type="Option<Formatter>">
+  Code formatter configuration (prettier, language server, external command)
+</ResponseField>
+
+### Context Server Settings
+
+For context servers (Model Context Protocol):
+
+```rust
+use zed_extension_api::settings::ContextServerSettings;
+
+impl zed::Extension for MyExtension {
+    fn context_server_configuration(
+        &mut self,
+        context_server_id: &zed::ContextServerId,
+        project: &zed::Project,
+    ) -> zed::Result<Option<zed::ContextServerConfiguration>> {
+        let settings = ContextServerSettings::for_project(
+            context_server_id.as_ref(),
+            project,
+        )?;
+
+        // Use settings to configure context server
+        Ok(Some(zed::ContextServerConfiguration {
+            // ... configuration based on settings
+        }))
+    }
+}
+```
+
+## User Configuration Format
+
+Users configure extensions in their Glass settings file:
+
+### Language Settings
+
+```json
+{
+  "languages": {
+    "Rust": {
+      "tab_size": 4,
+      "hard_tabs": false,
+      "soft_wrap": "preferred_line_length",
+      "preferred_line_length": 100
+    },
+    "Python": {
+      "tab_size": 4,
+      "formatter": "language_server"
+    }
+  }
+}
+```
+
+### LSP Settings
+
+```json
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "checkOnSave": {
+          "command": "clippy"
+        },
+        "cargo": {
+          "features": "all"
+        }
+      },
+      "settings": {
+        "rust-analyzer.inlayHints.parameterHints": true,
+        "rust-analyzer.completion.autoimport.enable": true
+      }
+    },
+    "typescript-language-server": {
+      "initialization_options": {
+        "preferences": {
+          "includeInlayParameterNameHints": "all"
+        }
+      }
+    }
+  }
+}
+```
+
+### Context Server Settings
+
+```json
+{
+  "context_servers": {
+    "my-mcp-server": {
+      "settings": {
+        "api_key": "user-api-key",
+        "endpoint": "https://api.example.com"
+      }
+    }
+  }
+}
+```
+
+## Worktree Information
+
+The `Worktree` resource provides access to workspace metadata:
+
+### Root Path
+
+```rust
+let root = worktree.root_path();
+println!("Project root: {}", root);
+```
+
+<ResponseField name="root_path" type="String">
+  Absolute path to the worktree root directory
+</ResponseField>
+
+### Worktree ID
+
+```rust
+let id = worktree.id();
+println!("Worktree ID: {}", id);
+```
+
+<ResponseField name="id" type="u64">
+  Unique identifier for this worktree within the project
+</ResponseField>
+
+### Reading Files
+
+Read text files from the worktree:
+
+```rust
+let cargo_toml = worktree.read_text_file("Cargo.toml")?;
+let lines: Vec<&str> = cargo_toml.lines().collect();
+
+// Find dependencies
+for line in lines {
+    if line.starts_with("serde") {
+        println!("Found serde dependency: {}", line);
+    }
+}
+```
+
+<ResponseField name="read_text_file" type="Result<String>">
+  Reads a file as UTF-8 text. Path is relative to worktree root.
+</ResponseField>
+
+<Warning>
+  `read_text_file` fails on binary files or files with invalid UTF-8. Only use for text files like configuration files.
+</Warning>
+
+### Finding Binaries
+
+Search for executables in PATH:
+
+```rust
+if let Some(cargo) = worktree.which("cargo") {
+    println!("Found cargo at: {}", cargo);
+
+    let mut cmd = zed::process::Command::new(cargo)
+        .args(["--version"]);
+    let output = cmd.output()?;
+    println!("Cargo version: {}", output.stdout);
+}
+```
+
+<ResponseField name="which" type="Option<String>">
+  Searches PATH for the given binary name. Returns absolute path if found.
+</ResponseField>
+
+### Shell Environment
+
+Access environment variables:
+
+```rust
+let env = worktree.shell_env();
+
+for (key, value) in env {
+    if key == "PATH" {
+        println!("PATH: {}", value);
+    }
+}
+```
+
+<ResponseField name="shell_env" type="Vec<(String, String)>">
+  Returns all environment variables from the user's shell as key-value pairs
+</ResponseField>
+
+## Project Information
+
+The `Project` resource provides project-wide information:
+
+### Multiple Worktrees
+
+Projects can contain multiple worktrees (folders):
+
+```rust
+impl zed::Extension for MyExtension {
+    fn context_server_command(
+        &mut self,
+        _context_server_id: &zed::ContextServerId,
+        project: &zed::Project,
+    ) -> zed::Result<zed::Command> {
+        let worktree_ids = project.worktree_ids();
+
+        println!("Project has {} worktrees", worktree_ids.len());
+
+        // You can't access worktrees directly from Project,
+        // but you can use IDs with settings system
+        Ok(zed::Command {
+            command: "context-server".to_string(),
+            args: vec![],
+            env: vec![],
+        })
+    }
+}
+```
+
+<ResponseField name="worktree_ids" type="Vec<u64>">
+  Returns IDs of all worktrees in the project
+</ResponseField>
+
+## Practical Examples
+
+### Respecting User Formatter Settings
+
+```rust
+use zed_extension_api::{self as zed, settings::LanguageSettings};
+
+impl MyExtension {
+    fn should_format_on_save(
+        &self,
+        language: &str,
+        worktree: &zed::Worktree,
+    ) -> bool {
+        if let Ok(settings) = LanguageSettings::for_worktree(Some(language), worktree) {
+            // Check if formatter is enabled
+            settings.formatter.is_some()
+        } else {
+            false
+        }
+    }
+}
+```
+
+### Using Custom LSP Settings
+
+```rust
+impl zed::Extension for MyExtension {
+    fn language_server_initialization_options(
+        &mut self,
+        server_id: &zed::LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> zed::Result<Option<zed::serde_json::Value>> {
+        use zed::settings::LspSettings;
+
+        // Get user settings
+        let user_settings = LspSettings::for_worktree(
+            server_id.as_ref(),
+            worktree,
+        )?;
+
+        // Merge with defaults
+        let mut options = zed::serde_json::json!({
+            "trace": "off"
+        });
+
+        if let Some(user_init) = user_settings.initialization_options {
+            // Merge user settings into defaults
+            if let Some(obj) = options.as_object_mut() {
+                if let Some(user_obj) = user_init.as_object() {
+                    for (key, value) in user_obj {
+                        obj.insert(key.clone(), value.clone());
+                    }
+                }
+            }
+        }
+
+        Ok(Some(options))
+    }
+}
+```
+
+### Detecting Project Type
+
+```rust
+impl MyExtension {
+    fn detect_project_type(
+        &self,
+        worktree: &zed::Worktree,
+    ) -> Option<ProjectType> {
+        // Check for Cargo.toml (Rust)
+        if worktree.read_text_file("Cargo.toml").is_ok() {
+            return Some(ProjectType::Rust);
+        }
+
+        // Check for package.json (Node.js)
+        if worktree.read_text_file("package.json").is_ok() {
+            return Some(ProjectType::NodeJs);
+        }
+
+        // Check for pyproject.toml or setup.py (Python)
+        if worktree.read_text_file("pyproject.toml").is_ok()
+            || worktree.read_text_file("setup.py").is_ok()
+        {
+            return Some(ProjectType::Python);
+        }
+
+        None
+    }
+}
+
+enum ProjectType {
+    Rust,
+    NodeJs,
+    Python,
+}
+```
+
+### Platform-Specific Configuration
+
+```rust
+use zed_extension_api::{current_platform, Os};
+
+impl MyExtension {
+    fn get_platform_specific_path(
+        &self,
+        worktree: &zed::Worktree,
+    ) -> String {
+        let platform = current_platform();
+        let env = worktree.shell_env();
+
+        match platform.os {
+            Os::Windows => {
+                // Find in AppData
+                env.iter()
+                    .find(|(k, _)| k == "APPDATA")
+                    .map(|(_, v)| format!("{}/MyApp", v))
+                    .unwrap_or_else(|| "C:/Program Files/MyApp".to_string())
+            }
+            Os::Mac => {
+                // Find in user's home
+                env.iter()
+                    .find(|(k, _)| k == "HOME")
+                    .map(|(_, v)| format!("{}/Library/Application Support/MyApp", v))
+                    .unwrap_or_else(|| "/usr/local/lib/myapp".to_string())
+            }
+            Os::Linux => {
+                // Check XDG directories
+                env.iter()
+                    .find(|(k, _)| k == "XDG_DATA_HOME")
+                    .map(|(_, v)| format!("{}/myapp", v))
+                    .or_else(|| {
+                        env.iter()
+                            .find(|(k, _)| k == "HOME")
+                            .map(|(_, v)| format!("{}/.local/share/myapp", v))
+                    })
+                    .unwrap_or_else(|| "/usr/local/lib/myapp".to_string())
+            }
+        }
+    }
+}
+```
+
+### Configuration-Based Server Selection
+
+```rust
+impl zed::Extension for MyExtension {
+    fn language_server_command(
+        &mut self,
+        language_server_id: &zed::LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> zed::Result<zed::Command> {
+        // Check if user has custom server configured
+        let settings = zed::settings::LspSettings::for_worktree(
+            language_server_id.as_ref(),
+            worktree,
+        )?;
+
+        // Look for custom "binary" setting
+        if let Some(init_options) = settings.initialization_options {
+            if let Some(custom_binary) = init_options.get("binary") {
+                if let Some(path) = custom_binary.as_str() {
+                    return Ok(zed::Command {
+                        command: path.to_string(),
+                        args: vec!["--stdio".to_string()],
+                        env: Default::default(),
+                    });
+                }
+            }
+        }
+
+        // Fall back to default server
+        self.install_default_server(language_server_id, worktree)
+    }
+}
+```
+
+## Working with Settings Location
+
+Settings can be scoped to specific paths within a worktree:
+
+```rust
+use zed_extension_api::SettingsLocation;
+
+let location = SettingsLocation {
+    worktree_id: worktree.id(),
+    path: "src/main.rs".to_string(),
+};
+
+// Settings are merged based on location
+// For example, .zed/settings.json at project root
+// can be overridden by .zed/settings.json in subdirectories
+```
+
+Glass automatically handles this when you use `for_worktree` methods.
+
+## Best Practices
+
+<Tip>
+  **Always provide defaults**: User settings may be incomplete. Merge user settings with sensible defaults.
+</Tip>
+
+<Tip>
+  **Respect user configuration**: Don't override user settings unless absolutely necessary for correctness.
+</Tip>
+
+<Tip>
+  **Document your settings**: Provide clear documentation on what settings your extension supports.
+</Tip>
+
+<Warning>
+  **Settings are read-only**: Extensions cannot modify settings. If you need to store state, use the `KeyValueStore` resource.
+</Warning>
+
+<Tip>
+  **Handle missing settings gracefully**: Always use `Option` types and provide fallbacks when settings aren't configured.
+</Tip>
+
+## Storing Extension State
+
+For data that extensions need to persist:
+
+```rust
+use zed_extension_api::KeyValueStore;
+
+impl zed::Extension for MyExtension {
+    fn index_docs(
+        &self,
+        _provider: String,
+        package: String,
+        database: &KeyValueStore,
+    ) -> zed::Result<()> {
+        // Store indexed documentation
+        database.insert(
+            &format!("docs:{}", package),
+            &serde_json::to_string(&indexed_data)?,
+        )?;
+
+        // Store metadata
+        database.insert(
+            &format!("metadata:{}", package),
+            &format!("{{\"version\":\"1.0.0\",\"indexed_at\":\"{}\"}}", timestamp),
+        )?;
+
+        Ok(())
+    }
+}
+```
+
+<Note>
+  `KeyValueStore` is simple: both keys and values must be strings. Serialize complex data to JSON.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Extension Overview" icon="book" href="/extensions/api/overview">
+    Return to the Extension API overview
+  </Card>
+  <Card title="Language Server API" icon="server" href="/extensions/api/language-server">
+    Learn about LSP integration
+  </Card>
+  <Card title="Commands API" icon="terminal" href="/extensions/api/commands">
+    Execute commands and processes
+  </Card>
+  <Card title="Building Extensions" icon="hammer" href="/extensions/building">
+    Create and publish your extension
+  </Card>
+</CardGroup>

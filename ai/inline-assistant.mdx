@@ -1,0 +1,403 @@
+---
+title: Inline AI Assistant
+description: Context-aware AI assistance directly in your editor with inline prompts and transformations
+---
+
+The Inline Assistant brings AI capabilities directly into your editor, allowing you to transform code, generate new code, and get instant help without leaving your current context.
+
+## Overview
+
+Inline assistance provides AI-powered help at your cursor position:
+
+- **Transform selections** - Refactor, explain, or modify selected code
+- **Generate code** - Create new code at cursor position
+- **Context-aware** - Uses surrounding code for better results
+- **Fast responses** - Optimized for quick interactions
+
+<Tip>
+  The inline assistant uses streaming responses, so you see results as they're generated.
+</Tip>
+
+## Activation
+
+Trigger the inline assistant:
+
+<Tabs>
+  <Tab title="Keyboard">
+    ### Keyboard Shortcuts
+    
+    | Action | macOS | Linux/Windows |
+    |--------|-------|---------------|
+    | Open inline assistant | `cmd-i` | `ctrl-i` |
+    | Accept suggestion | `tab` or `cmd-enter` | `tab` or `ctrl-enter` |
+    | Reject suggestion | `escape` | `escape` |
+    | Cancel generation | `escape` | `escape` |
+  </Tab>
+  
+  <Tab title="Context Menu">
+    ### Context Menu
+    
+    Right-click in the editor:
+    - **Ask AI** - Open inline prompt
+    - **Transform** - Apply predefined transformations
+    - **Explain** - Get code explanation
+    - **Generate Tests** - Create test cases
+  </Tab>
+  
+  <Tab title="Command Palette">
+    ### Command Palette
+    
+    `cmd-shift-p` / `ctrl-shift-p`:
+    - "Inline Assistant: Transform"
+    - "Inline Assistant: Generate"
+    - "Inline Assistant: Explain"
+  </Tab>
+</Tabs>
+
+## Usage Modes
+
+### Transform Selection
+
+Modify existing code:
+
+<Steps>
+  <Step title="Select Code">
+    Highlight the code you want to transform
+  </Step>
+  <Step title="Open Assistant">
+    Press `cmd-i` or `ctrl-i`
+  </Step>
+  <Step title="Describe Transformation">
+    Type what you want to do:
+    - "Refactor this to use async/await"
+    - "Add error handling"
+    - "Convert to TypeScript"
+    - "Optimize this loop"
+  </Step>
+  <Step title="Review and Apply">
+    Review the suggestion, then press `tab` to accept or `escape` to reject
+  </Step>
+</Steps>
+
+### Generate Code
+
+Create new code at cursor:
+
+<Steps>
+  <Step title="Position Cursor">
+    Place cursor where you want new code
+  </Step>
+  <Step title="Open Assistant">
+    Press `cmd-i` or `ctrl-i`
+  </Step>
+  <Step title="Describe Intent">
+    Type what you want to create:
+    - "Write a function to validate email addresses"
+    - "Create a React component for a user profile"
+    - "Add JSDoc comments"
+  </Step>
+  <Step title="Accept Suggestion">
+    Press `tab` to insert the generated code
+  </Step>
+</Steps>
+
+## Quick Actions
+
+Predefined prompts for common tasks:
+
+<CardGroup cols={3}>
+  <Card title="Explain" icon="message-question">
+    Get a detailed explanation of selected code
+  </Card>
+  <Card title="Refactor" icon="rotate">
+    Improve code structure and readability
+  </Card>
+  <Card title="Add Tests" icon="flask">
+    Generate unit tests for selected code
+  </Card>
+  <Card title="Fix Bug" icon="bug">
+    Identify and fix issues in selected code
+  </Card>
+  <Card title="Add Docs" icon="book">
+    Generate documentation comments
+  </Card>
+  <Card title="Optimize" icon="gauge-high">
+    Improve performance of selected code
+  </Card>
+</CardGroup>
+
+Access via right-click context menu or command palette.
+
+## Inline Prompts
+
+The inline assistant supports various prompt types:
+
+### Natural Language
+
+```markdown
+convert this to use async/await syntax
+
+add error handling with try/catch
+
+refactor to remove duplication
+
+optimize this for performance
+```
+
+### Code Examples
+
+```markdown
+rewrite this to look like:
+
+const result = await fetch(url)
+  .then(r => r.json())
+  .catch(handleError);
+```
+
+### Specific Instructions
+
+```markdown
+- extract this logic into a separate function
+- add TypeScript types
+- handle edge cases for empty arrays
+- use modern ES6+ syntax
+```
+
+## Model Configuration
+
+Configure which model handles inline requests:
+
+<CodeGroup>
+```json Default Model
+{
+  "agent": {
+    "inline_assistant_model": {
+      "provider": "anthropic",
+      "model": "claude-4.6-sonnet"
+    }
+  }
+}
+```
+
+```json Fast Model
+{
+  "agent": {
+    "inline_assistant_model": {
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    }
+  }
+}
+```
+
+```json Streaming Tools
+{
+  "agent": {
+    "inline_assistant_model": {
+      "provider": "anthropic",
+      "model": "claude-4.6-sonnet"
+    },
+    "inline_assistant_use_streaming_tools": true
+  }
+}
+```
+</CodeGroup>
+
+### Recommended Models
+
+| Use Case | Model | Why |
+|----------|-------|-----|
+| General use | Claude 4.6 Sonnet | Best quality |
+| Fast responses | GPT-4o Mini | Quick, cost-effective |
+| Complex refactoring | Claude 4.6 Sonnet | Better reasoning |
+
+## Context Handling
+
+### Automatic Context
+
+The inline assistant automatically includes:
+
+- **Selected code** - The highlighted text
+- **Surrounding code** - Lines above and below selection
+- **File type** - Language-specific context
+- **Project structure** - When relevant
+
+### Context Window
+
+Control how much context is included:
+
+```json
+{
+  "agent": {
+    "inline_context_lines": 50
+  }
+}
+```
+
+<Note>
+  Larger context windows provide better results but use more tokens.
+</Note>
+
+## Diff Preview
+
+Inline suggestions show as diffs:
+
+<Tabs>
+  <Tab title="Inline Diff">
+    ### Inline View
+    
+    Changes appear directly in the editor:
+    - Green: Added lines
+    - Red: Removed lines
+    - Yellow: Modified lines
+    
+    Navigate with arrow keys.
+  </Tab>
+  
+  <Tab title="Side-by-Side">
+    ### Split View
+    
+    Compare changes side-by-side:
+    ```json
+    {
+      "diff_view_style": "split"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Multi-step Editing
+
+Chain multiple inline transformations:
+
+<Steps>
+  <Step title="First Transformation">
+    Apply initial change (e.g., add error handling)
+  </Step>
+  <Step title="Refine">
+    With code still selected, apply another transformation
+  </Step>
+  <Step title="Iterate">
+    Continue refining until satisfied
+  </Step>
+  <Step title="Undo if Needed">
+    `cmd-z` / `ctrl-z` to revert changes
+  </Step>
+</Steps>
+
+## Performance Tips
+
+<Tip>
+  **Keep selections focused** - Select only the code you want to transform for faster results.
+</Tip>
+
+<Tip>
+  **Use specific prompts** - Clear, specific instructions get better results than vague requests.
+</Tip>
+
+<Tip>
+  **Choose appropriate models** - Use faster models for simple tasks, powerful models for complex ones.
+</Tip>
+
+## Advanced Features
+
+### Custom Prompts
+
+Create reusable prompts:
+
+```json
+{
+  "custom_inline_prompts": {
+    "add_logging": "Add comprehensive logging to this function",
+    "security_review": "Review this code for security vulnerabilities",
+    "perf_optimize": "Optimize this code for performance without changing behavior"
+  }
+}
+```
+
+Access via command palette.
+
+### Code Templates
+
+Generate boilerplate from templates:
+
+```markdown
+@template:react-component CreateButton
+
+@template:test-suite UserService
+```
+
+Define templates in settings or project-specific config.
+
+## Language-Specific Features
+
+### TypeScript/JavaScript
+
+- Add type annotations
+- Convert between JS and TS
+- Generate interfaces from objects
+- Async/await transformations
+
+### Python
+
+- Add type hints
+- Generate docstrings
+- Convert to/from dataclasses
+- Refactor to use list comprehensions
+
+### Rust
+
+- Add lifetime annotations
+- Convert to use `Result<T, E>`
+- Generate error handling
+- Derive trait implementations
+
+### Go
+
+- Add error handling
+- Generate method stubs
+- Convert to interfaces
+- Add context parameters
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Slow responses">
+    - Switch to a faster model (e.g., GPT-4o Mini)
+    - Reduce context window size
+    - Select less code at once
+    - Check network latency
+  </Accordion>
+  
+  <Accordion title="Poor suggestions">
+    - Be more specific in your prompt
+    - Include more context (select more code)
+    - Try a different model
+    - Provide example of desired output
+  </Accordion>
+  
+  <Accordion title="Assistant not appearing">
+    - Verify model is configured
+    - Check API key authentication
+    - Ensure feature is enabled in settings
+    - Try restarting Glass
+  </Accordion>
+</AccordionGroup>
+
+## Keyboard Reference
+
+| Action | macOS | Linux/Windows |
+|--------|-------|---------------|
+| Open inline assistant | `cmd-i` | `ctrl-i` |
+| Accept suggestion | `tab` or `cmd-enter` | `tab` or `ctrl-enter` |
+| Reject suggestion | `escape` | `escape` |
+| Next suggestion | `cmd-]` | `ctrl-]` |
+| Previous suggestion | `cmd-[` | `ctrl-[` |
+| Show diff | `cmd-d` | `ctrl-d` |
+| Undo | `cmd-z` | `ctrl-z` |
+
+## Next Steps
+
+- [Configure AI providers](/ai/providers)
+- [Learn about code completion](/ai/code-completion)
+- [Customize AI settings](/ai/configuration)

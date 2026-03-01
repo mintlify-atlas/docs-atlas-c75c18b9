@@ -1,0 +1,407 @@
+---
+title: GPUI Framework
+description: Understanding the GPUI UI framework that powers Glass
+---
+
+## What is GPUI?
+
+GPUI is Glass's custom GPU-accelerated UI framework written in Rust. It provides:
+
+- **Cross-platform rendering** using Metal, DirectX, or Vulkan
+- **Reactive state management** with entity-based architecture
+- **High performance** with minimal allocations and efficient updates
+- **Type-safe** UI construction at compile time
+
+GPUI is maintained as a separate project: https://github.com/Obsydian-HQ/gpui
+
+## Core GPUI Crates
+
+Glass depends on several GPUI crates:
+
+```toml
+gpui = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+gpui_macros = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+gpui_tokio = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+collections = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+util = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+sum_tree = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+scheduler = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+refineable = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+media = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+http_client = { git = "https://github.com/Obsydian-HQ/gpui.git" }
+```
+
+## Context Types
+
+GPUI uses context types to manage state and provide capabilities:
+
+### App Context
+
+`App` is the root context providing access to global state:
+
+```rust
+fn do_something(cx: &mut App) {
+    // Access entities
+    let entity = cx.new(|cx| MyState::new());
+    
+    // Spawn async work
+    cx.spawn(|cx| async move {
+        // Background work
+    });
+}
+```
+
+### Window Context
+
+`Window` provides access to window state and rendering:
+
+```rust
+fn render_ui(window: &mut Window, cx: &mut App) {
+    // Dispatch actions
+    window.dispatch_action(action, cx);
+    
+    // Manage focus
+    window.focus(&focus_handle);
+}
+```
+
+### Entity Context
+
+`Context<T>` is provided when updating an entity:
+
+```rust
+impl Editor {
+    fn update_text(&mut self, cx: &mut Context<Self>) {
+        // Mutate self
+        self.buffer.insert(...);
+        
+        // Trigger re-render
+        cx.notify();
+    }
+}
+```
+
+### Async Contexts
+
+`AsyncApp` and `AsyncWindowContext` can be held across await points:
+
+```rust
+cx.spawn(|mut cx| async move {
+    let result = some_async_fn().await;
+    cx.update(|cx| {
+        // Update state with result
+    })?;
+});
+```
+
+## Entity System
+
+<Tabs>
+  <Tab title="Creating Entities">
+    Entities are created via the context:
+
+    ```rust
+    let editor = cx.new(|cx| Editor::new(cx));
+    ```
+
+    This returns an `Entity<Editor>` handle.
+  </Tab>
+  
+  <Tab title="Reading Entities">
+    Read entity state immutably:
+
+    ```rust
+    editor.read(cx); // Returns &Editor
+    
+    editor.read_with(cx, |editor, cx| {
+        editor.buffer.text()
+    });
+    ```
+  </Tab>
+  
+  <Tab title="Updating Entities">
+    Mutate entity state:
+
+    ```rust
+    editor.update(cx, |editor, cx| {
+        editor.insert_text("hello", cx);
+        cx.notify(); // Trigger re-render
+    });
+    ```
+  </Tab>
+  
+  <Tab title="Weak References">
+    Prevent reference cycles:
+
+    ```rust
+    let weak = editor.downgrade();
+    
+    // Later, upgrade when needed
+    if let Some(editor) = weak.upgrade() {
+        editor.update(cx, |editor, cx| ...);
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Element System
+
+UI is built by implementing the `Render` trait:
+
+```rust
+struct MyView {
+    message: SharedString,
+}
+
+impl Render for MyView {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .items_center()
+            .p_4()
+            .border_1()
+            .border_color(rgb(0xcccccc))
+            .child(self.message.clone())
+    }
+}
+```
+
+### Element Composition
+
+Elements are composed using a builder pattern:
+
+```rust
+div()
+    .w_full()
+    .h(px(400.))
+    .flex()
+    .flex_col()
+    .gap_2()
+    .child(
+        div()
+            .text_lg()
+            .font_bold()
+            .child("Title")
+    )
+    .child(
+        div()
+            .text_sm()
+            .text_color(rgb(0x666666))
+            .child("Description")
+    )
+```
+
+### Styling
+
+GPUI uses a Tailwind-like API for styling:
+
+- `w_full()`, `h_full()` - Full width/height
+- `flex()`, `flex_col()` - Flexbox layout
+- `p_4()`, `px_2()`, `py_1()` - Padding
+- `m_4()`, `mx_2()` - Margin
+- `gap_2()` - Gap between flex items
+- `border_1()`, `border_color()` - Borders
+- `bg()`, `text_color()` - Colors
+- `rounded_lg()` - Border radius
+
+### Conditional Rendering
+
+```rust
+div()
+    .when(condition, |this| {
+        this.bg(red())
+    })
+    .when_some(optional_value, |this, value| {
+        this.child(format!("Value: {}", value))
+    })
+```
+
+## Event Handling
+
+### Input Events
+
+```rust
+div()
+    .on_click(|event, window, cx| {
+        println!("Clicked at {:?}", event.position);
+    })
+    .on_mouse_down(|event, window, cx| {
+        // Handle mouse down
+    })
+```
+
+### Actions
+
+Actions are typed commands dispatched via keybindings:
+
+```rust
+// Define an action
+#[derive(Clone, PartialEq, Debug)]
+struct Save;
+
+impl_actions!(editor, [Save]);
+
+// Register handler
+div()
+    .on_action(cx.listener(|this: &mut Editor, _: &Save, window, cx| {
+        this.save(window, cx);
+    }))
+```
+
+## State Management
+
+### Notifications
+
+Trigger UI updates when state changes:
+
+```rust
+impl Editor {
+    fn update_buffer(&mut self, cx: &mut Context<Self>) {
+        self.buffer.insert(...);
+        cx.notify(); // Re-render this view
+    }
+}
+```
+
+### Observations
+
+Observe changes to another entity:
+
+```rust
+cx.observe(&buffer, |this: &mut Editor, buffer, cx| {
+    // Called when buffer emits notify
+    this.handle_buffer_change(buffer, cx);
+}).detach();
+```
+
+### Entity Events
+
+<Note>
+  Entities can emit custom events that other entities subscribe to.
+</Note>
+
+```rust
+// Emit event
+impl EventEmitter<BufferEvent> for Buffer {}
+
+impl Buffer {
+    fn edit(&mut self, cx: &mut Context<Self>) {
+        // ... make changes
+        cx.emit(BufferEvent::Edited);
+    }
+}
+
+// Subscribe to events
+cx.subscribe(&buffer, |this: &mut Editor, buffer, event, cx| {
+    match event {
+        BufferEvent::Edited => this.handle_edit(cx),
+        BufferEvent::Saved => this.handle_save(cx),
+    }
+}).detach();
+```
+
+## Concurrency
+
+### Spawning Tasks
+
+```rust
+// Foreground task (main thread)
+let task = cx.spawn(|cx| async move {
+    // Async work on main thread
+});
+
+// Background task (thread pool)
+let task = cx.background_spawn(async move {
+    // CPU-intensive or blocking work
+});
+
+// Keep task alive or it will be cancelled
+task.detach();
+```
+
+### Task Lifecycle
+
+<Tabs>
+  <Tab title="Awaiting">
+    ```rust
+    let result = task.await;
+    ```
+    Waits for the task to complete.
+  </Tab>
+  
+  <Tab title="Detaching">
+    ```rust
+    task.detach();
+    ```
+    Allows task to run even if handle is dropped.
+  </Tab>
+  
+  <Tab title="Storing">
+    ```rust
+    struct MyView {
+        _task: Task<()>,
+    }
+    ```
+    Task is cancelled when struct is dropped.
+  </Tab>
+</Tabs>
+
+## Graphics Backend
+
+GPUI uses `wgpu` for cross-platform GPU access:
+
+- **macOS**: Metal backend
+- **Windows**: DirectX 12 backend
+- **Linux**: Vulkan backend
+
+### Rendering Pipeline
+
+1. Element tree construction (`Render::render()`)
+2. Layout calculation (Taffy flexbox engine)
+3. Paint phase (GPU commands)
+4. Frame submission to GPU
+
+## Platform Integration
+
+### Window Management
+
+```rust
+cx.open_window(WindowOptions::default(), |window, cx| {
+    // Initialize window content
+    MyView::new(cx)
+});
+```
+
+### Platform Features
+
+- Native menus (macOS)
+- File dialogs
+- Clipboard access
+- System notifications
+- Screen capture
+
+## Performance Characteristics
+
+### Efficient Updates
+
+- Only changed elements are re-rendered
+- Layout is incremental
+- GPU commands are batched
+
+### Memory Management
+
+- `SharedString` for string deduplication
+- Copy-on-write semantics
+- Automatic cleanup via Rust's ownership
+
+### Frame Timing
+
+- 60 FPS target
+- VSync synchronization
+- Input latency minimization
+
+## Related Pages
+
+- [Architecture Overview](/reference/architecture) - Overall system design
+- [UI Crate](/reference/crates#ui-components) - Glass's UI component library
+- [Build System](/reference/build-system) - GPUI compilation settings

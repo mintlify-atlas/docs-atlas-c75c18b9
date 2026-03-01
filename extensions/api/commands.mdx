@@ -1,0 +1,611 @@
+---
+title: Commands API
+description: Execute commands, run processes, and make HTTP requests from Glass extensions
+---
+
+## Overview
+
+The Commands API provides utilities for:
+
+- Executing shell commands and processes
+- Making HTTP requests
+- Working with Node.js and npm
+- Downloading and extracting files
+- Interacting with GitHub releases
+
+## Running Commands
+
+### Command Builder
+
+The `Command` type represents a process to execute:
+
+```rust
+use zed_extension_api::{self as zed};
+
+let cmd = zed::Command {
+    command: "/usr/bin/python3".to_string(),
+    args: vec!["-m".to_string(), "pip".to_string(), "install".to_string(), "mypy".to_string()],
+    env: vec![
+        ("PYTHONPATH".to_string(), "./lib".to_string()),
+        ("PIP_CACHE_DIR".to_string(), "./.pip-cache".to_string()),
+    ],
+};
+```
+
+<ParamField path="command" type="String" required>
+  Path to the executable. Can be absolute or relative. The extension will search PATH if not absolute.
+</ParamField>
+
+<ParamField path="args" type="Vec<String>">
+  Command-line arguments passed to the executable.
+</ParamField>
+
+<ParamField path="env" type="Vec<(String, String)>">
+  Environment variables to set for the process. These extend (not replace) the parent process environment.
+</ParamField>
+
+### Fluent Command Builder
+
+For more ergonomic command building, use the `process::Command` builder:
+
+```rust
+use zed_extension_api::process::Command;
+
+let mut cmd = Command::new("cargo")
+    .arg("build")
+    .arg("--release")
+    .env("CARGO_TARGET_DIR", "./target")
+    .env("RUSTFLAGS", "-C target-cpu=native");
+
+let output = cmd.output()?;
+```
+
+<ResponseField name="output" type="Result<Output>">
+  Executes the command and returns the output.
+
+  ```rust
+  pub struct Output {
+      pub stdout: String,
+      pub stderr: String,
+      pub exit_code: Option<i32>,
+  }
+  ```
+</ResponseField>
+
+### Builder Methods
+
+<ParamField path="new" type="fn(program: impl Into<String>) -> Command">
+  Creates a new command builder
+</ParamField>
+
+<ParamField path="arg" type="fn(self, arg: impl Into<String>) -> Command">
+  Adds a single argument
+</ParamField>
+
+<ParamField path="args" type="fn(self, args: impl IntoIterator<Item = impl Into<String>>) -> Command">
+  Adds multiple arguments
+</ParamField>
+
+<ParamField path="env" type="fn(self, key: impl Into<String>, value: impl Into<String>) -> Command">
+  Sets a single environment variable
+</ParamField>
+
+<ParamField path="envs" type="fn(self, envs: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>) -> Command">
+  Sets multiple environment variables
+</ParamField>
+
+### Command Output
+
+```rust
+use zed_extension_api::process::Command;
+
+let mut cmd = Command::new("git")
+    .args(["rev-parse", "HEAD"]);
+
+let output = cmd.output()?;
+
+if let Some(0) = output.exit_code {
+    let commit_hash = output.stdout.trim();
+    println!("Current commit: {}", commit_hash);
+} else {
+    eprintln!("Git command failed: {}", output.stderr);
+}
+```
+
+<ResponseField name="stdout" type="String">
+  Standard output from the command as a UTF-8 string
+</ResponseField>
+
+<ResponseField name="stderr" type="String">
+  Standard error output as a UTF-8 string
+</ResponseField>
+
+<ResponseField name="exit_code" type="Option<i32>">
+  Process exit code. `Some(0)` indicates success, other values indicate errors. `None` if the process was terminated by a signal.
+</ResponseField>
+
+## HTTP Client
+
+### Making HTTP Requests
+
+The `http_client` module provides HTTP request capabilities:
+
+```rust
+use zed_extension_api::http_client::{HttpRequest, HttpMethod};
+
+let request = HttpRequest::builder()
+    .method(HttpMethod::Get)
+    .url("https://api.example.com/data")
+    .header("Accept", "application/json")
+    .header("Authorization", "Bearer token123")
+    .build()?;
+
+let response = request.fetch()?;
+
+if response.status == 200 {
+    let body = String::from_utf8(response.body)?;
+    // Parse JSON response
+}
+```
+
+### Request Builder
+
+<ParamField path="method" type="fn(HttpMethod) -> Self" required>
+  Sets the HTTP method: `Get`, `Post`, `Put`, `Delete`, `Patch`, `Head`
+</ParamField>
+
+<ParamField path="url" type="fn(impl Into<String>) -> Self" required>
+  Sets the request URL
+</ParamField>
+
+<ParamField path="header" type="fn(impl Into<String>, impl Into<String>) -> Self">
+  Adds a single header
+</ParamField>
+
+<ParamField path="headers" type="fn(impl IntoIterator<Item = (String, String)>) -> Self">
+  Adds multiple headers
+</ParamField>
+
+<ParamField path="body" type="fn(impl Into<Vec<u8>>) -> Self">
+  Sets the request body (for POST/PUT/PATCH)
+</ParamField>
+
+<ParamField path="redirect_policy" type="fn(RedirectPolicy) -> Self">
+  Controls redirect behavior: `NoFollow` (default), `FollowLimit(u32)`, `FollowAll`
+</ParamField>
+
+### HTTP Response
+
+```rust
+pub struct HttpResponse {
+    pub status: u16,
+    pub headers: Vec<(String, String)>,
+    pub body: Vec<u8>,
+}
+```
+
+<ResponseField name="status" type="u16">
+  HTTP status code (200, 404, 500, etc.)
+</ResponseField>
+
+<ResponseField name="headers" type="Vec<(String, String)>">
+  Response headers as key-value pairs
+</ResponseField>
+
+<ResponseField name="body" type="Vec<u8>">
+  Response body as raw bytes. Convert to string with `String::from_utf8(response.body)?`
+</ResponseField>
+
+### Streaming Responses
+
+For large responses, use streaming:
+
+```rust
+use zed_extension_api::http_client::{HttpRequest, HttpMethod};
+
+let request = HttpRequest::builder()
+    .method(HttpMethod::Get)
+    .url("https://example.com/large-file.tar.gz")
+    .build()?;
+
+let stream = request.fetch_stream()?;
+
+// Process chunks as they arrive
+while let Some(chunk) = stream.read_chunk()? {
+    // Handle chunk
+}
+```
+
+### POST with JSON
+
+```rust
+use zed_extension_api::{http_client::{HttpRequest, HttpMethod}, serde_json};
+
+let payload = serde_json::json!({
+    "name": "my-extension",
+    "version": "1.0.0"
+});
+
+let request = HttpRequest::builder()
+    .method(HttpMethod::Post)
+    .url("https://api.example.com/extensions")
+    .header("Content-Type", "application/json")
+    .body(payload.to_string())
+    .build()?;
+
+let response = request.fetch()?;
+```
+
+## File Downloads
+
+### Downloading Files
+
+```rust
+use zed_extension_api::{self as zed, DownloadedFileType};
+
+// Download and extract a .tar.gz file
+zed::download_file(
+    "https://example.com/server-v1.2.3.tar.gz",
+    "server",  // Extract to ./server/
+    DownloadedFileType::GzipTar,
+)?;
+
+// Download a .zip file
+zed::download_file(
+    "https://example.com/tools.zip",
+    "tools",
+    DownloadedFileType::Zip,
+)?;
+
+// Download a single compressed file
+zed::download_file(
+    "https://example.com/binary.gz",
+    "binary",
+    DownloadedFileType::Gzip,
+)?;
+
+// Download without extraction
+zed::download_file(
+    "https://example.com/script.sh",
+    "script.sh",
+    DownloadedFileType::Uncompressed,
+)?;
+```
+
+<ParamField path="url" type="String" required>
+  URL to download from. Must use HTTPS for security.
+</ParamField>
+
+<ParamField path="file_path" type="String" required>
+  Destination path relative to the extension's working directory. For archives, this is the extraction directory.
+</ParamField>
+
+<ParamField path="file_type" type="DownloadedFileType" required>
+  Type of file being downloaded. Determines extraction behavior.
+</ParamField>
+
+### File Types
+
+<ParamField path="Gzip" type="DownloadedFileType::Gzip">
+  A single file compressed with gzip (`.gz`). Decompresses to the specified path.
+</ParamField>
+
+<ParamField path="GzipTar" type="DownloadedFileType::GzipTar">
+  A tar archive compressed with gzip (`.tar.gz`, `.tgz`). Extracts all files to the specified directory.
+</ParamField>
+
+<ParamField path="Zip" type="DownloadedFileType::Zip">
+  A ZIP archive (`.zip`). Extracts all files to the specified directory.
+</ParamField>
+
+<ParamField path="Uncompressed" type="DownloadedFileType::Uncompressed">
+  An uncompressed file. Saves directly to the specified path.
+</ParamField>
+
+### Making Files Executable
+
+After downloading a binary:
+
+```rust
+zed::download_file(
+    "https://example.com/language-server",
+    "server/language-server",
+    DownloadedFileType::Uncompressed,
+)?;
+
+zed::make_file_executable("server/language-server")?;
+```
+
+<Note>
+  `make_file_executable` is a no-op on Windows. On Unix-like systems, it adds execute permissions.
+</Note>
+
+## Node.js and npm
+
+### Node Binary Path
+
+Get the path to the Node.js binary managed by Glass:
+
+```rust
+let node_path = zed::node_binary_path()?;
+
+let cmd = zed::Command {
+    command: node_path,
+    args: vec!["script.js".to_string()],
+    env: Default::default(),
+};
+```
+
+### Installing npm Packages
+
+```rust
+use zed_extension_api::{self as zed};
+
+// Check latest version
+let latest_version = zed::npm_package_latest_version("typescript-language-server")?;
+
+// Check installed version
+let installed = zed::npm_package_installed_version("typescript-language-server")?;
+
+if installed.as_ref() != Some(&latest_version) {
+    // Install or update
+    zed::npm_install_package("typescript-language-server", &latest_version)?;
+}
+
+// Use the installed package
+let server_path = "node_modules/.bin/typescript-language-server";
+```
+
+<ParamField path="npm_package_latest_version" type="fn(package: &str) -> Result<String>">
+  Queries npm registry for the latest version of a package
+</ParamField>
+
+<ParamField path="npm_package_installed_version" type="fn(package: &str) -> Result<Option<String>>">
+  Returns the installed version of a package, or None if not installed
+</ParamField>
+
+<ParamField path="npm_install_package" type="fn(package: &str, version: &str) -> Result<()>">
+  Installs a specific version of an npm package to `node_modules/`
+</ParamField>
+
+<Tip>
+  npm packages are installed to the extension's working directory, isolated from the user's system.
+</Tip>
+
+## GitHub Integration
+
+### Fetching Releases
+
+```rust
+use zed_extension_api::{self as zed, GithubReleaseOptions};
+
+let release = zed::latest_github_release(
+    "rust-lang/rust-analyzer",
+    GithubReleaseOptions {
+        require_assets: true,
+        pre_release: false,
+    },
+)?;
+
+println!("Latest version: {}", release.version);
+println!("Release notes: {}", release.body);
+```
+
+<ResponseField name="version" type="String">
+  Release version tag (e.g., "v1.2.3")
+</ResponseField>
+
+<ResponseField name="body" type="String">
+  Release notes and description
+</ResponseField>
+
+<ResponseField name="assets" type="Vec<GithubReleaseAsset>">
+  List of downloadable assets attached to the release
+</ResponseField>
+
+### Release Assets
+
+```rust
+pub struct GithubReleaseAsset {
+    pub name: String,
+    pub download_url: String,
+}
+```
+
+Find and download the right asset:
+
+```rust
+use zed_extension_api::{current_platform, Os, Architecture};
+
+let platform = current_platform();
+let asset_suffix = match (platform.os, platform.arch) {
+    (Os::Mac, Architecture::Aarch64) => "aarch64-apple-darwin.tar.gz",
+    (Os::Mac, Architecture::X8664) => "x86_64-apple-darwin.tar.gz",
+    (Os::Linux, Architecture::X8664) => "x86_64-unknown-linux-gnu.tar.gz",
+    (Os::Windows, Architecture::X8664) => "x86_64-pc-windows-msvc.zip",
+    _ => return Err("Unsupported platform".to_string()),
+};
+
+let asset = release
+    .assets
+    .iter()
+    .find(|a| a.name.ends_with(asset_suffix))
+    .ok_or("No matching asset found")?;
+
+zed::download_file(
+    &asset.download_url,
+    "server",
+    zed::DownloadedFileType::GzipTar,
+)?;
+```
+
+### Specific Release by Tag
+
+```rust
+let release = zed::github_release_by_tag_name(
+    "microsoft/vscode-languageserver-node",
+    "release/8.1.0",
+    GithubReleaseOptions {
+        require_assets: true,
+        pre_release: false,
+    },
+)?;
+```
+
+## Platform Detection
+
+### Current Platform
+
+Detect the operating system and architecture:
+
+```rust
+use zed_extension_api::{current_platform, Os, Architecture};
+
+let platform = current_platform();
+
+match platform.os {
+    Os::Mac => {
+        // macOS-specific logic
+    }
+    Os::Linux => {
+        // Linux-specific logic
+    }
+    Os::Windows => {
+        // Windows-specific logic
+    }
+}
+
+match platform.arch {
+    Architecture::Aarch64 => {
+        // ARM64 (Apple Silicon, ARM servers)
+    }
+    Architecture::X8664 => {
+        // x86_64 (Intel/AMD)
+    }
+    Architecture::X86 => {
+        // 32-bit x86 (rare)
+    }
+}
+```
+
+<ResponseField name="os" type="Os">
+  Operating system: `Mac`, `Linux`, or `Windows`
+</ResponseField>
+
+<ResponseField name="arch" type="Architecture">
+  CPU architecture: `Aarch64`, `X8664`, or `X86`
+</ResponseField>
+
+## Complete Example: Installing a Language Server
+
+Combining all the APIs to install a language server:
+
+```rust
+use zed_extension_api::{self as zed, LanguageServerId, Result};
+use std::fs;
+
+impl MyExtension {
+    fn ensure_server_installed(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<String> {
+        // 1. Check if user has server in PATH
+        if let Some(path) = worktree.which("my-language-server") {
+            return Ok(path);
+        }
+
+        // 2. Check if we already downloaded it
+        let server_path = "server/my-language-server";
+        if fs::metadata(server_path).is_ok() {
+            return Ok(server_path.to_string());
+        }
+
+        // 3. Download from GitHub
+        zed::set_language_server_installation_status(
+            language_server_id,
+            &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+        );
+
+        let release = zed::latest_github_release(
+            "org/my-language-server",
+            zed::GithubReleaseOptions {
+                require_assets: true,
+                pre_release: false,
+            },
+        )?;
+
+        // 4. Find platform-specific asset
+        let platform = zed::current_platform();
+        let asset_name = format!(
+            "my-language-server-{}-{}.tar.gz",
+            match platform.os {
+                zed::Os::Mac => "macos",
+                zed::Os::Linux => "linux",
+                zed::Os::Windows => "windows",
+            },
+            match platform.arch {
+                zed::Architecture::Aarch64 => "aarch64",
+                zed::Architecture::X8664 => "x86_64",
+                zed::Architecture::X86 => "x86",
+            }
+        );
+
+        let asset = release
+            .assets
+            .iter()
+            .find(|a| a.name == asset_name)
+            .ok_or_else(|| format!("No asset found for {}", asset_name))?;
+
+        // 5. Download and extract
+        zed::set_language_server_installation_status(
+            language_server_id,
+            &zed::LanguageServerInstallationStatus::Downloading,
+        );
+
+        zed::download_file(
+            &asset.download_url,
+            "server",
+            zed::DownloadedFileType::GzipTar,
+        )?;
+
+        // 6. Make executable
+        zed::make_file_executable(server_path)?;
+
+        Ok(server_path.to_string())
+    }
+}
+```
+
+## Best Practices
+
+<Tip>
+  **Check PATH first**: Always use `worktree.which()` to respect user-installed binaries before downloading.
+</Tip>
+
+<Tip>
+  **Cache downloads**: Check if files already exist before re-downloading.
+</Tip>
+
+<Tip>
+  **Provide feedback**: Use `set_language_server_installation_status` to show download progress.
+</Tip>
+
+<Warning>
+  **Handle errors gracefully**: All command and HTTP operations can fail. Always return proper `Result` types.
+</Warning>
+
+<Tip>
+  **Use HTTPS**: Only download from HTTPS URLs for security.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration API" icon="gear" href="/extensions/api/configuration">
+    Learn about accessing extension settings
+  </Card>
+  <Card title="Language Server API" icon="server" href="/extensions/api/language-server">
+    Integrate language servers with LSP
+  </Card>
+</CardGroup>

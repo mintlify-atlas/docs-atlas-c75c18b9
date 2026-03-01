@@ -1,0 +1,370 @@
+---
+title: Managing Extensions
+description: Learn how to update, configure, uninstall, and troubleshoot installed extensions in Glass
+---
+
+Once you've installed extensions, Glass provides tools to manage them effectively. This guide covers updating, configuring, and removing extensions.
+
+## Viewing Installed Extensions
+
+To see which extensions you have installed:
+
+<Steps>
+  <Step title="Open the Extensions view">
+    Press `Cmd+Shift+X` (macOS) or `Ctrl+Shift+X` (Linux/Windows)
+  </Step>
+  <Step title="Filter by installed">
+    Use the filter dropdown at the top and select **Installed** to show only your installed extensions
+  </Step>
+</Steps>
+
+Installed extensions show:
+- Current version number
+- Install status (Installed, Updating, Installing, Removing)
+- What features they provide (themes, languages, etc.)
+- Management buttons (Uninstall, Upgrade, Configure)
+
+## Updating Extensions
+
+Keeping extensions up-to-date ensures you have the latest features and bug fixes.
+
+### Automatic Updates
+
+By default, Glass automatically checks for and installs extension updates.
+
+**Configuring Auto-Update**
+
+In your settings (`settings.json`):
+
+```json
+{
+  "extensions": {
+    "auto_update": true  // Global auto-update setting
+  }
+}
+```
+
+**Per-Extension Auto-Update Control**
+
+Disable auto-update for specific extensions:
+
+```json
+{
+  "extensions": {
+    "auto_update": true,
+    "auto_update_extensions": {
+      "some-extension-id": false  // Disable auto-update for this extension
+    }
+  }
+}
+```
+
+### Manual Updates
+
+To manually update an extension:
+
+<Steps>
+  <Step title="Check for updates">
+    Glass periodically checks for updates, but you can force a check:
+    ```
+    Extensions: Check for Updates
+    ```
+  </Step>
+  <Step title="Identify updatable extensions">
+    Extensions with available updates show:
+    - The new version number
+    - An **Upgrade** button
+    - "(v1.2.0 installed)" if the installed version differs
+  </Step>
+  <Step title="Click Upgrade">
+    Click the **Upgrade** button to install the latest version
+  </Step>
+</Steps>
+
+The update process:
+1. Downloads the new version
+2. Removes the old version
+3. Installs the new version
+4. Reloads the extension automatically
+
+<Note>
+Development extensions are never auto-updated. You must manually rebuild them using the **Rebuild** button.
+</Note>
+
+## Configuring Extensions
+
+Some extensions provide configurable options.
+
+### Context Server Configuration
+
+Extensions that provide Model Context Protocol (MCP) servers can be configured:
+
+<Steps>
+  <Step title="Find a configurable extension">
+    Extensions with context servers show a **Configure** button
+  </Step>
+  <Step title="Click Configure">
+    Opens the configuration interface for the extension's context servers
+  </Step>
+  <Step title="Set server parameters">
+    Configure:
+    - Server URLs
+    - Authentication credentials
+    - API keys
+    - Other server-specific settings
+  </Step>
+</Steps>
+
+### Extension Settings
+
+Some extensions may add their own settings. Check the extension's documentation for available options:
+
+```json
+{
+  "extension-name": {
+    "option1": "value",
+    "option2": true
+  }
+}
+```
+
+## Uninstalling Extensions
+
+Remove extensions you no longer need.
+
+### Uninstalling Published Extensions
+
+<Steps>
+  <Step title="Open the Extensions view">
+    Press `Cmd+Shift+X` (macOS) or `Ctrl+Shift+X` (Linux/Windows)
+  </Step>
+  <Step title="Find the extension">
+    Locate the extension you want to remove
+  </Step>
+  <Step title="Click Uninstall">
+    Click the **Uninstall** button on the extension card
+  </Step>
+  <Step title="Confirm removal">
+    The extension will be removed immediately. Glass will:
+    - Remove the extension directory
+    - Unload extension resources
+    - Clean up any work files
+  </Step>
+</Steps>
+
+### Uninstalling Development Extensions
+
+Dev extensions can be uninstalled the same way:
+
+1. Find the dev extension (marked with `<>` indicator)
+2. Click **Uninstall**
+3. The symlink is removed, but your source directory remains intact
+
+<Tip>
+Uninstalling a dev extension doesn't delete your source code—only the symlink from the extensions directory.
+</Tip>
+
+## Rebuilding Development Extensions
+
+For Rust-based dev extensions, you can rebuild without reinstalling:
+
+<Steps>
+  <Step title="Make changes to your extension">
+    Edit your extension's source code
+  </Step>
+  <Step title="Open the Extensions view">
+    Navigate to the installed dev extension
+  </Step>
+  <Step title="Click Rebuild">
+    Click the **Rebuild** button to:
+    - Recompile the extension
+    - Reload it in Glass
+    - Apply your changes
+  </Step>
+</Steps>
+
+The rebuild process uses the same compilation options as the initial install, preserving debug symbols and other development features.
+
+<Warning>
+The Rebuild button is disabled while a rebuild is in progress. Wait for the current build to complete.
+</Warning>
+
+## Reloading Extensions
+
+If extensions aren't behaving correctly, you can force a reload.
+
+### Manual Reload
+
+```
+Extensions: Reload Extensions
+```
+
+This command:
+- Rebuilds the extension index from the filesystem
+- Unloads all extensions
+- Reloads all extensions
+- Re-registers extension resources
+
+### Automatic Reload
+
+Glass automatically reloads extensions when:
+- Files in the extensions directory change
+- An extension is installed or uninstalled
+- An extension is upgraded
+- A dev extension is rebuilt
+
+The reload is debounced (delayed) by 200ms to batch multiple changes together.
+
+## Extension Information
+
+### Viewing Extension Details
+
+To see detailed information about an extension:
+
+1. Find the extension in the Extensions view
+2. Click the three-dot menu (•••)
+3. Select from:
+   - **Install Another Version**: Install a specific version
+   - **Copy Extension ID**: Copy the extension's unique identifier
+   - **Copy Author Info**: Copy author names to clipboard
+
+### Extension Metadata
+
+Each extension card displays:
+
+- **Name**: Human-readable extension name
+- **Version**: Current version number (e.g., `v1.2.3`)
+- **Description**: Brief description of functionality
+- **Authors**: Extension creators
+- **Downloads**: Total download count from the registry
+- **Repository**: Link to source code (GitHub icon)
+- **Provides**: Badges showing what the extension adds (Languages, Themes, etc.)
+
+### Development Extension Indicators
+
+Dev extensions show special indicators:
+- `<>` symbol in the extension card
+- "Rebuild" button instead of "Upgrade"
+- Local version number
+- Repository link (if specified in manifest)
+
+## Extension Storage Locations
+
+Extensions are stored in your Glass configuration directory:
+
+```bash
+~/.config/glass/extensions/
+├── installed/          # Extension files
+│   ├── html/          # Published extension
+│   ├── python/        # Published extension
+│   └── my-dev-ext/    # Symlink to dev extension
+├── work/              # Extension runtime data
+│   └── <extension-id>/
+├── build/             # Build artifacts for dev extensions
+└── index.json         # Extension index cache
+```
+
+**installed/**: Contains extension files, either as extracted archives (published) or symlinks (dev)
+
+**work/**: Runtime working directories for extensions, including WASM execution state
+
+**build/**: Compilation artifacts for development extensions
+
+**index.json**: Cached index of all installed extensions and their provided resources
+
+<Note>
+Manually modifying files in these directories is not recommended. Use the Extensions view instead.
+</Note>
+
+## Troubleshooting
+
+### Extension Not Loading
+
+**Check the extension index**:
+```bash
+cat ~/.config/glass/extensions/index.json
+```
+
+If corrupted or missing, reload extensions:
+```
+Extensions: Reload Extensions
+```
+
+**Check logs**: Look for errors in the Glass log:
+```
+View > Developer > Show Logs
+```
+
+Search for the extension ID to find related errors.
+
+### Extension Conflicts
+
+If two extensions conflict (e.g., both provide the same language):
+
+1. Glass typically uses the last-loaded extension
+2. You can uninstall one to resolve the conflict
+3. Check extension documentation for compatibility notes
+
+### Extension Causes Crashes
+
+If an extension causes instability:
+
+1. Note the extension ID from the Extensions view
+2. Uninstall the problematic extension
+3. Restart Glass
+4. Report the issue to the extension author (via the repository link)
+
+### Dev Extension Won't Rebuild
+
+**Check for compilation errors**: The error panel will show Rust compiler errors
+
+**Verify your Rust toolchain**:
+```bash
+rustc --version
+cargo --version
+```
+
+**Check the extension manifest**: Ensure `extension.toml` is valid:
+```toml
+schema_version = 1
+
+[lib]
+kind = "Rust"
+```
+
+**Manually rebuild**: Try rebuilding from the command line:
+```bash
+cd /path/to/your/extension
+cargo build --release
+```
+
+## Extension Updates and Compatibility
+
+Glass ensures extension compatibility through:
+
+**Schema Versions**: Extensions declare a schema version (currently 1). Glass only loads compatible versions.
+
+**WASM API Versions**: Extensions specify which WASM API version they use. Glass supports a range of API versions.
+
+**Release Channel**: Some extensions may have channel-specific requirements (Stable, Preview, Dev).
+
+<Warning>
+After a major Glass update, some extensions may become incompatible. Check for extension updates if features stop working.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Extension Overview" icon="book" href="/extensions/overview">
+    Learn more about how the extension system works
+  </Card>
+  <Card title="Building Extensions" icon="hammer" href="/extensions/getting-started">
+    Create your own extensions for Glass
+  </Card>
+  <Card title="Extension API" icon="code" href="/extensions/api/overview">
+    Explore the extension API reference
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/development/debugging">
+    General debugging and troubleshooting guide
+  </Card>
+</CardGroup>

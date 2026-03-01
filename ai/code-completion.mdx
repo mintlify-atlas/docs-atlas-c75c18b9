@@ -1,0 +1,487 @@
+---
+title: AI Code Completions
+description: Real-time AI-powered code suggestions as you type, with support for multiple completion providers
+---
+
+Glass provides AI-powered code completions that suggest code as you type, helping you write code faster and with fewer errors.
+
+## Overview
+
+AI completions in Glass:
+
+- **Real-time suggestions** - Appear as you type
+- **Context-aware** - Uses surrounding code and project structure
+- **Multi-line support** - Suggests entire functions or blocks
+- **Multiple providers** - Choose between Zed Cloud, Ollama, or custom endpoints
+
+<Note>
+  Code completions are also called "edit predictions" or "autocomplete" in the codebase.
+</Note>
+
+## Completion Providers
+
+<Tabs>
+  <Tab title="Zed Predict">
+    ### Zed Predict (Cloud)
+    
+    Glass's built-in completion service:
+    
+    - **Zeta models** - Purpose-built for code completion
+    - **Fast responses** - Optimized for low latency
+    - **Context-aware** - Uses project structure and recent changes
+    - **Free tier** - Limited completions per month
+    
+    **Setup**: Requires Zed account (automatic authentication)
+  </Tab>
+  
+  <Tab title="Ollama">
+    ### Ollama (Local)
+    
+    Run completions locally for privacy:
+    
+    - **Offline** - No internet required
+    - **Private** - Code never leaves your machine
+    - **Customizable** - Choose any Ollama model
+    - **Free** - No usage limits
+    
+    **Setup**: Install Ollama and configure in settings
+  </Tab>
+  
+  <Tab title="Custom">
+    ### OpenAI-Compatible APIs
+    
+    Use any OpenAI-compatible endpoint:
+    
+    - **Flexibility** - Use any compatible service
+    - **Custom models** - Deploy your own models
+    - **Self-hosted** - Full control
+    
+    **Setup**: Configure API endpoint and key
+  </Tab>
+</Tabs>
+
+## Configuration
+
+### Enable Completions
+
+<CodeGroup>
+```json Zed Predict (Default)
+{
+  "edit_predictions": {
+    "provider": "zed_cloud",
+    "enabled": true
+  }
+}
+```
+
+```json Ollama
+{
+  "edit_predictions": {
+    "provider": "ollama",
+    "enabled": true,
+    "ollama": {
+      "api_url": "http://localhost:11434",
+      "model": "codellama:7b"
+    }
+  }
+}
+```
+
+```json OpenAI-Compatible
+{
+  "edit_predictions": {
+    "provider": "openai_compatible_api",
+    "enabled": true,
+    "openai_compatible_api": {
+      "api_url": "https://your-endpoint.com/v1",
+      "api_key": "your-api-key",
+      "model": "your-model-name"
+    }
+  }
+}
+```
+</CodeGroup>
+
+### Advanced Settings
+
+Fine-tune completion behavior:
+
+```json
+{
+  "edit_predictions": {
+    "enabled": true,
+    "provider": "zed_cloud",
+    "debounce_ms": 300,
+    "max_completions": 3,
+    "min_trigger_length": 3,
+    "show_inline": true,
+    "show_in_menu": true
+  }
+}
+```
+
+<ParamField path="debounce_ms" type="number" default={300}>
+  Milliseconds to wait before requesting completion
+</ParamField>
+
+<ParamField path="max_completions" type="number" default={3}>
+  Maximum number of completions to show
+</ParamField>
+
+<ParamField path="min_trigger_length" type="number" default={3}>
+  Minimum characters before triggering completion
+</ParamField>
+
+<ParamField path="show_inline" type="boolean" default={true}>
+  Show completions inline (ghost text)
+</ParamField>
+
+<ParamField path="show_in_menu" type="boolean" default={true}>
+  Show completions in popup menu
+</ParamField>
+
+## Usage
+
+### Accepting Completions
+
+<Tabs>
+  <Tab title="Inline">
+    ### Inline Completions (Ghost Text)
+    
+    Gray text appears as you type:
+    
+    - **Tab** - Accept entire suggestion
+    - **Cmd/Ctrl-Right** - Accept word by word
+    - **Escape** - Dismiss suggestion
+    
+    Inline suggestions preview the completion without committing.
+  </Tab>
+  
+  <Tab title="Menu">
+    ### Completion Menu
+    
+    Popup menu with multiple suggestions:
+    
+    - **Up/Down** - Navigate suggestions
+    - **Enter** - Accept selected suggestion
+    - **Tab** - Accept and continue typing
+    - **Escape** - Close menu
+    
+    Shows multiple options ranked by relevance.
+  </Tab>
+</Tabs>
+
+### Keyboard Shortcuts
+
+| Action | macOS | Linux/Windows |
+|--------|-------|---------------|
+| Accept completion | `tab` | `tab` |
+| Accept word | `cmd-right` | `ctrl-right` |
+| Next suggestion | `cmd-]` | `ctrl-]` |
+| Previous suggestion | `cmd-[` | `ctrl-[` |
+| Dismiss | `escape` | `escape` |
+| Trigger manually | `cmd-space` | `ctrl-space` |
+
+## How It Works
+
+### Context Gathering
+
+Completions use multiple context sources:
+
+<Steps>
+  <Step title="Current File">
+    Content before and after cursor position
+  </Step>
+  <Step title="Recent Edits">
+    Your recent changes in the file
+  </Step>
+  <Step title="Related Files">
+    Semantically related files in the project
+  </Step>
+  <Step title="Project Structure">
+    Directory layout and file organization
+  </Step>
+</Steps>
+
+### Trigger Conditions
+
+Completions are triggered when:
+
+- Typing continues for several characters
+- After specific syntax (e.g., `.`, `->`, `::`)
+- When pausing after incomplete code
+- Manually via `cmd-space` / `ctrl-space`
+
+### Ranking
+
+Suggestions are ranked by:
+
+1. **Relevance** - How well they match context
+2. **Confidence** - Model certainty
+3. **User patterns** - Your coding style
+4. **Recency** - Recent similar code
+
+## Zed Predict (Cloud)
+
+Glass's hosted completion service:
+
+### Features
+
+- **Zeta models** - Specialized for code completion
+- **Fast inference** - Sub-100ms latency
+- **Smart caching** - Reuses context across requests
+- **Privacy-focused** - Code is not stored long-term
+
+### Setup
+
+<Steps>
+  <Step title="Sign In">
+    Sign in to your Zed account (automatic if using Glass)
+  </Step>
+  <Step title="Enable">
+    Completions are enabled by default
+  </Step>
+  <Step title="Usage Limits">
+    Free tier includes limited completions per month
+  </Step>
+  <Step title="Upgrade">
+    Upgrade for unlimited completions
+  </Step>
+</Steps>
+
+### Data Privacy
+
+<AccordionGroup>
+  <Accordion title="What data is sent?">
+    - Current file content (truncated to relevant sections)
+    - Cursor position
+    - Recent edit history
+    - File type and language
+    - Project context (optional)
+  </Accordion>
+  
+  <Accordion title="How is data used?">
+    - Generate completions for your request
+    - Improve model quality (aggregated, anonymized)
+    - Never shared with third parties
+    - Automatically deleted after processing
+  </Accordion>
+  
+  <Accordion title="Can I opt out?">
+    Yes, switch to Ollama or another local provider:
+    ```json
+    {
+      "edit_predictions": {
+        "provider": "ollama"
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Ollama Setup
+
+Run completions locally with Ollama:
+
+<Steps>
+  <Step title="Install Ollama">
+    Download from [ollama.ai](https://ollama.ai)
+    ```bash
+    # macOS/Linux
+    curl -fsSL https://ollama.ai/install.sh | sh
+    ```
+  </Step>
+  
+  <Step title="Pull a Model">
+    Download a code model:
+    ```bash
+    ollama pull codellama:7b
+    # or
+    ollama pull deepseek-coder:6.7b
+    # or
+    ollama pull starcoder:7b
+    ```
+  </Step>
+  
+  <Step title="Configure Glass">
+    Update settings:
+    ```json
+    {
+      "edit_predictions": {
+        "provider": "ollama",
+        "ollama": {
+          "api_url": "http://localhost:11434",
+          "model": "codellama:7b"
+        }
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Verify">
+    Start typing code - completions should appear
+  </Step>
+</Steps>
+
+### Recommended Models
+
+| Model | Size | Quality | Speed | Best For |
+|-------|------|---------|-------|----------|
+| codellama:7b | 4GB | Good | Fast | General code |
+| deepseek-coder:6.7b | 4GB | Better | Fast | Multi-language |
+| starcoder:7b | 4GB | Good | Fast | Python, JS |
+| codellama:13b | 8GB | Better | Medium | Quality over speed |
+| deepseek-coder:33b | 19GB | Best | Slow | Best quality |
+
+## OpenAI-Compatible APIs
+
+Use any OpenAI-compatible endpoint:
+
+### Configuration
+
+```json
+{
+  "edit_predictions": {
+    "provider": "openai_compatible_api",
+    "openai_compatible_api": {
+      "api_url": "https://api.example.com/v1",
+      "api_key": "your-api-key",
+      "model": "your-model",
+      "prompt_format": "fim"
+    }
+  }
+}
+```
+
+<ParamField path="prompt_format" type="string">
+  Format for completion requests:
+  - `fim` - Fill-in-the-middle (default)
+  - `chat` - Chat completion format
+  - `raw` - Raw completion format
+</ParamField>
+
+### Compatible Services
+
+- **OpenAI API** - Official OpenAI endpoint
+- **Azure OpenAI** - Microsoft Azure deployment
+- **Together AI** - Hosted model inference
+- **Replicate** - Model hosting platform
+- **Hugging Face** - Inference API
+- **LM Studio** - Local server
+- **Text Generation WebUI** - Self-hosted
+
+## Language Support
+
+Completions work best with:
+
+<CardGroup cols={4}>
+  <Card title="TypeScript" icon="js">
+    Excellent support
+  </Card>
+  <Card title="Python" icon="python">
+    Excellent support
+  </Card>
+  <Card title="Rust" icon="rust">
+    Excellent support
+  </Card>
+  <Card title="Go" icon="golang">
+    Excellent support
+  </Card>
+  <Card title="JavaScript" icon="js">
+    Excellent support
+  </Card>
+  <Card title="Java" icon="java">
+    Good support
+  </Card>
+  <Card title="C++" icon="c">
+    Good support
+  </Card>
+  <Card title="C#" icon="hashtag">
+    Good support
+  </Card>
+</CardGroup>
+
+Other languages are supported but may have variable quality.
+
+## Performance Tuning
+
+### Reduce Latency
+
+<Tip>
+  **Use local models** - Ollama eliminates network latency
+</Tip>
+
+<Tip>
+  **Adjust debounce** - Lower `debounce_ms` for faster suggestions
+  ```json
+  { "edit_predictions": { "debounce_ms": 200 } }
+  ```
+</Tip>
+
+### Improve Quality
+
+<Tip>
+  **Use larger models** - Better results with more capable models
+</Tip>
+
+<Tip>
+  **Provide more context** - Keep related files open
+</Tip>
+
+### Balance Speed and Quality
+
+```json
+{
+  "edit_predictions": {
+    "provider": "ollama",
+    "ollama": {
+      "model": "codellama:7b",
+      "options": {
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "num_predict": 50
+      }
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No completions appearing">
+    - Check `edit_predictions.enabled` is `true`
+    - Verify provider is configured correctly
+    - Ensure API key is valid (for cloud providers)
+    - Check Ollama is running (for local)
+    - Review logs: `cmd-shift-p` → "Open Logs"
+  </Accordion>
+  
+  <Accordion title="Slow completions">
+    - Try a smaller model (Ollama)
+    - Increase `debounce_ms`
+    - Check network latency (cloud providers)
+    - Reduce context size
+    - Use local provider instead of cloud
+  </Accordion>
+  
+  <Accordion title="Poor quality suggestions">
+    - Use a larger/better model
+    - Provide more context (open related files)
+    - Adjust temperature/top_p parameters
+    - Try different provider
+  </Accordion>
+  
+  <Accordion title="Ollama connection failed">
+    - Verify Ollama is running: `ollama list`
+    - Check API URL in settings
+    - Ensure model is pulled: `ollama pull [model]`
+    - Check firewall settings
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+- [Configure AI providers](/ai/providers)
+- [Learn about inline assistance](/ai/inline-assistant)
+- [Customize AI settings](/ai/configuration)

@@ -1,0 +1,186 @@
+---
+title: AI Capabilities Overview
+description: Comprehensive AI-powered features in Glass code editor including agent panel, inline assistance, code completions, and multi-provider support
+---
+
+Glass provides a comprehensive suite of AI capabilities powered by multiple language model providers. The AI features are deeply integrated into the editor to enhance your coding workflow.
+
+## Core AI Features
+
+Glass offers three primary AI-powered features:
+
+<CardGroup cols={3}>
+  <Card title="Agent Panel" icon="robot" href="/ai/agent-panel">
+    Interactive AI agents for code generation, refactoring, and complex tasks
+  </Card>
+  <Card title="Inline Assistant" icon="wand-magic-sparkles" href="/ai/inline-assistant">
+    Context-aware AI assistance directly in your editor
+  </Card>
+  <Card title="Code Completion" icon="code" href="/ai/code-completion">
+    Real-time AI-powered code suggestions as you type
+  </Card>
+</CardGroup>
+
+## Supported AI Providers
+
+Glass supports multiple language model providers, allowing you to choose the best option for your workflow:
+
+- **Anthropic Claude** - Claude 4.6 Sonnet, Opus, and other Claude models
+- **OpenAI** - GPT-4, GPT-5, o1, o3, and other OpenAI models
+- **OpenAI-compatible APIs** - Any OpenAI-compatible endpoint
+- **Ollama** - Local models for privacy and offline usage
+- **Google Gemini** - Gemini models via Agent Servers
+- **Custom providers** - Extend with your own model providers
+
+<Note>
+  Most AI features require authentication with at least one provider. See the [Provider Configuration](/ai/providers) guide for setup instructions.
+</Note>
+
+## Agent Types
+
+Glass supports multiple agent implementations:
+
+### Native Agent (Zed Agent)
+
+The built-in agent with full access to Glass features:
+- **Tool support** - Can edit files, run terminal commands, search code
+- **Context awareness** - Accesses project structure, rules, and prompts
+- **Multi-model support** - Works with any configured provider
+- **Streaming responses** - Real-time response generation
+
+### Text Thread Agent
+
+A lightweight agent for conversational interactions:
+- **Simple conversations** - No tool execution
+- **Fast responses** - Optimized for quick interactions
+- **Context attachment** - Manual file and context inclusion
+
+### External Agents
+
+Support for third-party agent implementations:
+- **Claude Code (via Agent Server)** - Official Anthropic agent
+- **Gemini CLI** - Google's agent implementation
+- **Codex** - OpenAI's code-focused agent
+- **Custom agents** - Via Agent Client Protocol (ACP)
+
+## Key Capabilities
+
+### Context Management
+
+<Steps>
+  <Step title="Project Context">
+    Agents automatically access project structure, worktree information, and rules files (`.zed.md`, `.rules`, etc.)
+  </Step>
+  <Step title="Related Files">
+    Semantic search finds relevant code files based on your current task
+  </Step>
+  <Step title="Prompt Library">
+    Reusable prompts stored in `~/.config/zed/prompts/` for common tasks
+  </Step>
+  <Step title="Context Servers">
+    Model Context Protocol (MCP) servers provide external context sources
+  </Step>
+</Steps>
+
+### Tool Execution
+
+Native agents can execute tools with configurable permissions:
+
+- **File Operations** - Read, write, edit files with diff preview
+- **Terminal Commands** - Execute shell commands with approval
+- **Code Search** - Search across project with semantic and text search
+- **Git Operations** - View diffs, branch management
+- **LSP Integration** - Go to definition, find references
+
+<Warning>
+  Tool permissions can be configured in settings. By default, most operations require confirmation.
+</Warning>
+
+## Model Selection
+
+Choose different models for specific tasks:
+
+```json
+{
+  "agent": {
+    "default_model": {
+      "provider": "anthropic",
+      "model": "claude-4.6-sonnet"
+    },
+    "inline_assistant_model": {
+      "provider": "anthropic",
+      "model": "claude-4.6-sonnet"
+    },
+    "thread_summary_model": {
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    }
+  }
+}
+```
+
+## AI Configuration
+
+<CardGroup cols={2}>
+  <Card title="Provider Setup" icon="plug" href="/ai/providers">
+    Configure API keys and endpoints for each provider
+  </Card>
+  <Card title="Settings" icon="gear" href="/ai/configuration">
+    Customize AI behavior, tool permissions, and model parameters
+  </Card>
+</CardGroup>
+
+## Privacy and Data
+
+<AccordionGroup>
+  <Accordion title="What data is sent to AI providers?">
+    When using AI features, Glass sends:
+    - Your prompts and messages
+    - Relevant file contents (based on context selection)
+    - Project structure information
+    - Code snippets from active files
+    
+    You control what context is included via context servers and file selections.
+  </Accordion>
+  
+  <Accordion title="Using local models">
+    For complete privacy, use Ollama or other local providers:
+    - No data leaves your machine
+    - Works offline
+    - Full control over models
+    
+    See [Provider Configuration](/ai/providers) for Ollama setup.
+  </Accordion>
+  
+  <Accordion title="API key storage">
+    API keys are stored securely:
+    - macOS: Stored in Keychain
+    - Linux: Stored in Secret Service (gnome-keyring, KWallet)
+    - Windows: Stored in Credential Manager
+    
+    Keys can also be set via environment variables.
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Configure a Provider">
+    Set up at least one AI provider in [Settings](/ai/providers)
+  </Step>
+  <Step title="Open Agent Panel">
+    Use `cmd-shift-a` (macOS) or `ctrl-shift-a` (Linux/Windows)
+  </Step>
+  <Step title="Start a Conversation">
+    Type your question or task and press Enter
+  </Step>
+  <Step title="Review and Apply">
+    Review suggested changes and apply them to your code
+  </Step>
+</Steps>
+
+## Next Steps
+
+- [Learn about the Agent Panel](/ai/agent-panel)
+- [Configure AI providers](/ai/providers)
+- [Customize AI settings](/ai/configuration)

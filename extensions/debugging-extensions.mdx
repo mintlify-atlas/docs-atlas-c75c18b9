@@ -1,0 +1,499 @@
+---
+title: Building Debugger Extensions
+description: Integrate Debug Adapter Protocol (DAP) servers to enable debugging in Glass code editor
+---
+
+## Building Debugger Extensions
+
+Debugger extensions integrate Debug Adapter Protocol (DAP) servers into Glass, enabling step-through debugging, breakpoints, variable inspection, and more.
+
+## Debug Adapter Protocol
+
+The [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol) (DAP) is a standardized protocol for debuggers. Glass uses DAP to provide language-agnostic debugging capabilities.
+
+A debug adapter:
+
+- Communicates between Glass and the debugger
+- Handles launch and attach requests
+- Manages breakpoints and stepping
+- Provides variable and stack inspection
+
+## Defining Debug Adapters
+
+<Steps>
+
+### Register the adapter
+
+Add a debug adapter entry to `extension.toml`:
+
+```toml
+[debug_adapters.my-debugger]
+# Optional: custom schema path
+# Defaults to debug_adapter_schemas/my-debugger.json
+schema_path = "schemas/debugger-config.json"
+```
+
+<Note>
+The schema file is mandatory and defines the JSON schema for debug configurations.
+</Note>
+
+### Create the configuration schema
+
+Create `debug_adapter_schemas/my-debugger.json`:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["request", "program"],
+  "properties": {
+    "request": {
+      "type": "string",
+      "enum": ["launch", "attach"]
+    },
+    "program": {
+      "type": "string",
+      "description": "Path to the program to debug"
+    },
+    "args": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Command line arguments"
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory"
+    },
+    "env": {
+      "type": "object",
+      "description": "Environment variables"
+    }
+  }
+}
+```
+
+### Implement get_dap_binary
+
+Return the debug adapter command:
+
+```rust
+use zed_extension_api::{
+    self as zed, DebugAdapterBinary, DebugTaskDefinition,
+    Worktree, Result,
+};
+
+struct MyDebuggerExtension {
+    cached_adapter_path: Option<String>,
+}
+
+impl zed::Extension for MyDebuggerExtension {
+    fn new() -> Self {
+        Self {
+            cached_adapter_path: None,
+        }
+    }
+
+    fn get_dap_binary(
+        &mut self,
+        adapter_name: String,
+        config: DebugTaskDefinition,
+        user_provided_debug_adapter_path: Option<String>,
+        worktree: &Worktree,
+    ) -> Result<DebugAdapterBinary, String> {
+        // Use user-provided path if available
+        if let Some(path) = user_provided_debug_adapter_path {
+            return Ok(DebugAdapterBinary {
+                command: path,
+                args: vec![],
+                env: None,
+            });
+        }
+
+        // Check if adapter is in PATH
+        if let Some(path) = worktree.which("my-debugger") {
+            return Ok(DebugAdapterBinary {
+                command: path,
+                args: vec![],
+                env: None,
+            });
+        }
+
+        // Download or install the adapter
+        let adapter_path = self.install_adapter(&adapter_name)?;
+
+        Ok(DebugAdapterBinary {
+            command: adapter_path,
+            args: vec![],
+            env: None,
+        })
+    }
+}
+```
+
+</Steps>
+
+## Request Kind Determination
+
+Implement `dap_request_kind` to determine launch vs. attach:
+
+```rust
+use zed_extension_api::{
+    StartDebuggingRequestArgumentsRequest,
+    LaunchRequest, AttachRequest,
+};
+use serde_json::Value;
+
+impl zed::Extension for MyDebuggerExtension {
+    fn dap_request_kind(
+        &mut self,
+        _adapter_name: String,
+        config: Value,
+    ) -> Result<StartDebuggingRequestArgumentsRequest, String> {
+        let request = config
+            .get("request")
+            .and_then(|v| v.as_str())
+            .ok_or("Missing 'request' field")?;
+
+        match request {
+            "launch" => Ok(StartDebuggingRequestArgumentsRequest::Launch(
+                LaunchRequest {
+                    configuration: config,
+                }
+            )),
+            "attach" => Ok(StartDebuggingRequestArgumentsRequest::Attach(
+                AttachRequest {
+                    configuration: config,
+                }
+            )),
+            _ => Err(format!("Unknown request type: {}", request)),
+        }
+    }
+}
+```
+
+## High-Level Debug Configuration
+
+Implement `dap_config_to_scenario` to convert generic configs to adapter-specific ones:
+
+```rust
+use zed_extension_api::{DebugConfig, DebugScenario, DebugRequest};
+
+impl zed::Extension for MyDebuggerExtension {
+    fn dap_config_to_scenario(
+        &mut self,
+        config: DebugConfig,
+    ) -> Result<DebugScenario, String> {
+        // Convert generic config to adapter-specific config
+        let adapter_config = serde_json::json!({
+            "request": "launch",
+            "program": config.program,
+            "args": config.args,
+            "cwd": config.cwd,
+            "env": config.env,
+        });
+
+        Ok(DebugScenario {
+            adapter_name: "my-debugger".to_string(),
+            request: DebugRequest::Launch(LaunchRequest {
+                configuration: adapter_config,
+            }),
+            build: None, // No build task needed
+        })
+    }
+}
+```
+
+## Installing Debug Adapters
+
+### From GitHub Releases
+
+```rust
+fn install_adapter(&mut self, adapter_name: &str) -> Result<String, String> {
+    if let Some(path) = &self.cached_adapter_path {
+        if std::fs::metadata(path).is_ok() {
+            return Ok(path.clone());
+        }
+    }
+
+    let release = zed::latest_github_release(
+        "debugger-org/my-debugger",
+        zed::GithubReleaseOptions {
+            require_assets: true,
+            pre_release: false,
+        },
+    )?;
+
+    let (platform, arch) = zed::current_platform();
+    let asset_name = format!(
+        "my-debugger-{}-{}.tar.gz",
+        platform_str(platform),
+        arch_str(arch)
+    );
+
+    let asset = release
+        .assets
+        .iter()
+        .find(|a| a.name == asset_name)
+        .ok_or_else(|| format!("No asset found: {}", asset_name))?;
+
+    let version_dir = format!("my-debugger-{}", release.version);
+    zed::download_file(
+        &asset.download_url,
+        &version_dir,
+        zed::DownloadedFileType::GzipTar,
+    )?;
+
+    let binary_path = format!("{}/my-debugger", version_dir);
+    zed::make_file_executable(&binary_path)?;
+
+    self.cached_adapter_path = Some(binary_path.clone());
+    Ok(binary_path)
+}
+
+fn platform_str(platform: zed::Os) -> &'static str {
+    match platform {
+        zed::Os::Mac => "darwin",
+        zed::Os::Linux => "linux",
+        zed::Os::Windows => "windows",
+    }
+}
+
+fn arch_str(arch: zed::Architecture) -> &'static str {
+    match arch {
+        zed::Architecture::Aarch64 => "arm64",
+        zed::Architecture::X8664 => "x64",
+        zed::Architecture::X86 => "x86",
+    }
+}
+```
+
+### From npm
+
+```rust
+fn install_node_adapter(&mut self) -> Result<String, String> {
+    const PACKAGE_NAME: &str = "@company/debugger";
+    const ADAPTER_PATH: &str = "node_modules/@company/debugger/out/debugAdapter.js";
+
+    let version = zed::npm_package_latest_version(PACKAGE_NAME)?;
+
+    if !std::fs::metadata(ADAPTER_PATH).is_ok()
+        || zed::npm_package_installed_version(PACKAGE_NAME)?.as_ref() != Some(&version)
+    {
+        zed::npm_install_package(PACKAGE_NAME, &version)?;
+    }
+
+    Ok(ADAPTER_PATH.to_string())
+}
+```
+
+## Debug Locators
+
+Locators automatically convert tasks (like `cargo run`) into debug scenarios.
+
+### Registering a Locator
+
+Add to `extension.toml`:
+
+```toml
+[debug_locators.my-locator]
+```
+
+### Two-Phase Resolution
+
+Locators work in two phases:
+
+1. **Create scenario** - Convert task to debug scenario with optional build task
+2. **Run locator** - After build, determine final debug configuration
+
+```rust
+impl zed::Extension for MyDebuggerExtension {
+    fn dap_locator_create_scenario(
+        &mut self,
+        locator_name: String,
+        build_task: TaskTemplate,
+        resolved_label: String,
+        debug_adapter_name: String,
+    ) -> Option<DebugScenario> {
+        // Check if this task is relevant
+        if !build_task.command.starts_with("cargo run") {
+            return None;
+        }
+
+        // Convert "cargo run" to "cargo build"
+        let mut build_task = build_task.clone();
+        build_task.command = build_task.command.replace("run", "build");
+
+        Some(DebugScenario {
+            adapter_name: debug_adapter_name,
+            request: DebugRequest::Launch(LaunchRequest {
+                configuration: serde_json::json!({}),
+            }),
+            build: Some(BuildTaskDefinition {
+                task_template: build_task,
+            }),
+        })
+    }
+
+    fn run_dap_locator(
+        &mut self,
+        _locator_name: String,
+        build_task: TaskTemplate,
+    ) -> Result<DebugRequest, String> {
+        // After build completes, find the binary
+        let binary = find_built_binary(&build_task)?;
+
+        Ok(DebugRequest::Launch(LaunchRequest {
+            configuration: serde_json::json!({
+                "request": "launch",
+                "program": binary,
+            }),
+        }))
+    }
+}
+```
+
+<Tip>
+You can skip the two-phase resolution if you can determine the full configuration in `dap_locator_create_scenario`. Just omit the `build` field.
+</Tip>
+
+## Example: Complete Debugger Extension
+
+<CodeGroup>
+
+```toml extension.toml
+id = "rust-debugger"
+name = "Rust Debugger"
+version = "0.1.0"
+schema_version = 1
+authors = ["Your Name <you@example.com>"]
+description = "LLDB debugger for Rust"
+repository = "https://github.com/you/rust-debugger"
+
+[debug_adapters.lldb]
+schema_path = "debug_adapter_schemas/lldb.json"
+
+[debug_locators.cargo]
+```
+
+```rust src/lib.rs
+use zed_extension_api::{
+    self as zed, DebugAdapterBinary, DebugConfig,
+    DebugScenario, DebugRequest, DebugTaskDefinition,
+    LaunchRequest, StartDebuggingRequestArgumentsRequest,
+    Worktree, Result,
+};
+
+struct RustDebuggerExtension {
+    cached_lldb_path: Option<String>,
+}
+
+impl zed::Extension for RustDebuggerExtension {
+    fn new() -> Self {
+        Self {
+            cached_lldb_path: None,
+        }
+    }
+
+    fn get_dap_binary(
+        &mut self,
+        _adapter_name: String,
+        _config: DebugTaskDefinition,
+        user_path: Option<String>,
+        worktree: &Worktree,
+    ) -> Result<DebugAdapterBinary, String> {
+        if let Some(path) = user_path.or_else(|| worktree.which("lldb-vscode")) {
+            return Ok(DebugAdapterBinary {
+                command: path,
+                args: vec![],
+                env: None,
+            });
+        }
+
+        Err("lldb-vscode not found".to_string())
+    }
+
+    fn dap_request_kind(
+        &mut self,
+        _adapter_name: String,
+        config: serde_json::Value,
+    ) -> Result<StartDebuggingRequestArgumentsRequest, String> {
+        let request = config
+            .get("request")
+            .and_then(|v| v.as_str())
+            .ok_or("Missing request field")?;
+
+        match request {
+            "launch" => Ok(StartDebuggingRequestArgumentsRequest::Launch(
+                LaunchRequest { configuration: config }
+            )),
+            "attach" => Ok(StartDebuggingRequestArgumentsRequest::Attach(
+                zed::AttachRequest { configuration: config }
+            )),
+            _ => Err(format!("Unknown request: {}", request)),
+        }
+    }
+
+    fn dap_config_to_scenario(
+        &mut self,
+        config: DebugConfig,
+    ) -> Result<DebugScenario, String> {
+        Ok(DebugScenario {
+            adapter_name: "lldb".to_string(),
+            request: DebugRequest::Launch(LaunchRequest {
+                configuration: serde_json::json!({
+                    "request": "launch",
+                    "program": config.program,
+                    "args": config.args,
+                    "cwd": config.cwd,
+                    "env": config.env,
+                }),
+            }),
+            build: None,
+        })
+    }
+}
+
+zed::register_extension!(RustDebuggerExtension);
+```
+
+</CodeGroup>
+
+## Testing Debugger Extensions
+
+<Steps>
+
+### Install as dev extension
+
+Press `Cmd+Shift+P` and run **Extensions: Install Dev Extension**.
+
+### Create a debug configuration
+
+Create `.glass/debug.json` in your project:
+
+```json
+{
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug Rust",
+      "program": "${workspaceFolder}/target/debug/myapp",
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
+```
+
+### Start debugging
+
+Press `F5` or run **Debug: Start** from the command palette.
+
+</Steps>
+
+## See Also
+
+- [Debug Adapter Protocol Specification](https://microsoft.github.io/debug-adapter-protocol/)
+- [Glass Debugger Documentation](/debugger)
+- [Published Debug Adapters](https://zed.dev/extensions?filter=debug-adapters)
+- [Extension API Reference](https://docs.rs/zed_extension_api)
